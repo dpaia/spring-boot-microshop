@@ -1,6 +1,8 @@
 # macOS uses the '7000' port for the control center
 server.port: 7001
 
+spring.config.import: classpath:openapi-config.yml
+
 app:
   product-service:
     host: localhost
