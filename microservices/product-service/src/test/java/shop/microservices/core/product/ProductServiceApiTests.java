@@ -7,6 +7,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
+import static org.springframework.http.MediaType.APPLICATION_JSON;
+
 @WebMvcTest
 public class ProductServiceApiTests {
 
@@ -16,7 +18,7 @@ public class ProductServiceApiTests {
     @Test
     public void testProductServiceApi() {
         mockMvcTester.get()
-                .uri("http://localhost:8080/product/0")
+                .uri("/product/0")
                 .accept(MediaType.APPLICATION_JSON)
                 .exchange()
                 .assertThat()
@@ -27,5 +29,25 @@ public class ProductServiceApiTests {
                 .hasPath("$.name")
                 .hasPath("$.weight")
                 .hasPath("$.serviceAddress");
+    }
+
+    @Test
+    void testBadRequestForWrongParameterType() {
+        mockMvcTester.get()
+                .uri("/product/no-integer")
+                .accept(APPLICATION_JSON)
+                .exchange()
+                .assertThat()
+                .hasStatus(HttpStatus.BAD_REQUEST);
+    }
+
+    @Test
+    void testUnprocessableEntityForNegativeParameter() {
+        mockMvcTester.get()
+                .uri("/product/-1")
+                .accept(APPLICATION_JSON)
+                .exchange()
+                .assertThat()
+                .hasStatus(HttpStatus.UNPROCESSABLE_ENTITY);
     }
 }
