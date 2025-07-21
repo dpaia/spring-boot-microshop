@@ -13,4 +13,8 @@ public record HttpErrorInfo(HttpStatus httpStatus,
     public HttpErrorInfo(HttpStatus httpStatus, String path, String message) {
         this(httpStatus, path, message, ZonedDateTime.now());
     }
+
+    public String getMessage() {
+        return message;
+    }
 }

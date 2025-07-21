@@ -1,2 +1,13 @@
 # macOS uses the '7000' port for the control center
 server.port: 7001
+
+app:
+  product-service:
+    host: localhost
+    port: 7002
+  recommendation-service:
+    host: localhost
+    port: 7003
+  review-service:
+    host: localhost
+    port: 7004
