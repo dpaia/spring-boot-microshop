@@ -1,55 +1,150 @@
 package shop.microservices.core.review;
 
+import com.google.gson.Gson;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
+import org.springframework.test.json.AbstractJsonContentAssert;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
+import shop.api.core.review.Review;
+import shop.microservices.core.review.persistence.ReviewRepository;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
+import static org.springframework.http.HttpStatus.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
-@WebMvcTest
-public class ReviewServiceApiTests {
+@AutoConfigureMockMvc
+@SpringBootTest(webEnvironment = RANDOM_PORT)
+class ReviewServiceApiTests extends MySqlTestBase {
 
     @Autowired
     private MockMvcTester mockMvcTester;
 
-    @Test
-    public void testProductCompositeServiceApi() {
-        mockMvcTester.get()
-                .uri("/review?productId=0")
-                .accept(MediaType.APPLICATION_JSON)
-                .exchange()
-                .assertThat()
-                .hasStatus(HttpStatus.OK)
-                .hasContentType(MediaType.APPLICATION_JSON)
-                .bodyJson()
-                .hasPath("$[0].productId")
-                .hasPath("$[0].reviewId")
-                .hasPath("$[0].author")
-                .hasPath("$[0].subject")
-                .hasPath("$[0].content")
-                .hasPath("$[0].serviceAddress");
+    @Autowired
+    private ReviewRepository repository;
+
+    @BeforeEach
+    void setupDb() {
+        repository.deleteAll();
     }
 
     @Test
-    void testBadRequestForWrongParameterType() {
-        mockMvcTester.get()
-                .uri("/review?productId=no-integer")
-                .accept(APPLICATION_JSON)
-                .exchange()
-                .assertThat()
-                .hasStatus(HttpStatus.BAD_REQUEST);
+    void getReviewsByProductId() {
+        int productId = 1;
+
+        assertEquals(0, repository.findByProductId(productId).size());
+
+        postAndVerifyReview(productId, 1, OK);
+        postAndVerifyReview(productId, 2, OK);
+        postAndVerifyReview(productId, 3, OK);
+
+        assertEquals(3, repository.findByProductId(productId).size());
+
+        getAndVerifyReviewsByProductId(productId, OK)
+                .hasPathSatisfying("$.length()", it -> it.assertThat().isEqualTo(3))
+                .hasPathSatisfying("$[2].productId", it -> it.assertThat().isEqualTo(productId))
+                .hasPathSatisfying("$[2].reviewId", it -> it.assertThat().isEqualTo(3));
     }
 
     @Test
-    void testUnprocessableEntityForNegativeParameter() {
-        mockMvcTester.get()
-                .uri("/review?productId=-1")
+    void duplicateError() {
+        int productId = 1;
+        int reviewId = 1;
+
+        assertEquals(0, repository.count());
+
+        postAndVerifyReview(productId, reviewId, OK)
+                .hasPathSatisfying("$.productId", it -> it.assertThat().isEqualTo(productId))
+                .hasPathSatisfying("$.reviewId", it -> it.assertThat().isEqualTo(reviewId));
+
+        assertEquals(1, repository.count());
+
+        postAndVerifyReview(productId, reviewId, UNPROCESSABLE_ENTITY)
+                .hasPathSatisfying("$.path", it -> it.assertThat().isEqualTo("/review"))
+                .hasPathSatisfying("$.message", it -> it.assertThat().isEqualTo("Duplicate key, Product Id: 1, Review Id:1"));
+
+        assertEquals(1, repository.count());
+    }
+
+    @Test
+    void deleteReviews() {
+        int productId = 1;
+        int reviewId = 1;
+
+        postAndVerifyReview(productId, reviewId, OK);
+        assertEquals(1, repository.findByProductId(productId).size());
+
+        deleteAndVerifyReviewsByProductId(productId, OK);
+        assertEquals(0, repository.findByProductId(productId).size());
+
+        deleteAndVerifyReviewsByProductId(productId, OK);
+    }
+
+    @Test
+    void getReviewsMissingParameter() {
+        getAndVerifyReviewsByProductId("", BAD_REQUEST);
+    }
+
+    @Test
+    void getReviewsInvalidParameter() {
+        getAndVerifyReviewsByProductId("?productId=no-integer", BAD_REQUEST);
+    }
+
+    @Test
+    void getReviewsNotFound() {
+        getAndVerifyReviewsByProductId("?productId=213", OK)
+                .hasPathSatisfying("$.length()", it -> it.assertThat().isEqualTo(0));
+    }
+
+    @Test
+    void getReviewsInvalidParameterNegativeValue() {
+        int productIdInvalid = -1;
+
+        getAndVerifyReviewsByProductId("?productId=" + productIdInvalid, UNPROCESSABLE_ENTITY)
+                .hasPathSatisfying("$.path", it -> it.assertThat().isEqualTo("/review"))
+                .hasPathSatisfying("$.message", it -> it.assertThat().isEqualTo("Invalid productId: " + productIdInvalid));
+    }
+
+    @SuppressWarnings("SameParameterValue")
+    private AbstractJsonContentAssert<?> getAndVerifyReviewsByProductId(int productId, HttpStatus expectedStatus) {
+        return getAndVerifyReviewsByProductId("?productId=" + productId, expectedStatus);
+    }
+
+    private AbstractJsonContentAssert<?> getAndVerifyReviewsByProductId(String productIdQuery, HttpStatus expectedStatus) {
+        return mockMvcTester.get()
+                .uri("/review" + productIdQuery)
                 .accept(APPLICATION_JSON)
                 .exchange()
                 .assertThat()
-                .hasStatus(HttpStatus.UNPROCESSABLE_ENTITY);
+                .hasStatus(expectedStatus)
+                .bodyJson();
+    }
+
+    private AbstractJsonContentAssert<?> postAndVerifyReview(int productId, int reviewId, HttpStatus expectedStatus) {
+        Review review = new Review(productId, reviewId, "Author " + reviewId, "Subject " + reviewId, "Content " + reviewId, "SA");
+        return mockMvcTester.post()
+                .uri("/review")
+                .contentType(APPLICATION_JSON)
+                .content(new Gson().toJson(review))
+                .exchange()
+                .assertThat()
+                .hasStatus(expectedStatus)
+                .hasContentType(APPLICATION_JSON)
+                .bodyJson();
+    }
+
+    @SuppressWarnings("SameParameterValue")
+    private void deleteAndVerifyReviewsByProductId(int productId, HttpStatus expectedStatus) {
+        mockMvcTester.delete()
+                .uri("/review?productId=" + productId)
+                .accept(APPLICATION_JSON)
+                .exchange()
+                .assertThat()
+                .hasStatus(expectedStatus)
+                .bodyJson();
     }
 }
