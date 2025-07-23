@@ -7,16 +7,6 @@ spring.datasource:
 
 spring.datasource.hikari.initializationFailTimeout: 60000
 
-spring.sql.init:
-  mode: always
-  schema-locations: classpath:db/init/init.sql
-  platform: mysql
-
-spring.jpa:
-  hibernate:
-    ddl-auto: none
-  show-sql: true
-
 logging:
   level:
     org.springframework.web.*: DEBUG
