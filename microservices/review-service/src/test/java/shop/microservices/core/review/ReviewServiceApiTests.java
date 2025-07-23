@@ -21,6 +21,8 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 @SpringBootTest(webEnvironment = RANDOM_PORT)
 class ReviewServiceApiTests extends MySqlTestBase {
 
+    private static final String REVIEW_CONTENT = "Lorem ipsum dolor sit amet, consetetur sadipscingw";
+
     @Autowired
     private MockMvcTester mockMvcTester;
 
@@ -125,7 +127,7 @@ class ReviewServiceApiTests extends MySqlTestBase {
     }
 
     private AbstractJsonContentAssert<?> postAndVerifyReview(int productId, int reviewId, HttpStatus expectedStatus) {
-        Review review = new Review(productId, reviewId, "Author " + reviewId, "Subject " + reviewId, "Content " + reviewId, "SA");
+        Review review = new Review(productId, reviewId, "Author " + reviewId, "Subject " + reviewId, REVIEW_CONTENT + reviewId, "SA");
         return mockMvcTester.post()
                 .uri("/review")
                 .contentType(APPLICATION_JSON)

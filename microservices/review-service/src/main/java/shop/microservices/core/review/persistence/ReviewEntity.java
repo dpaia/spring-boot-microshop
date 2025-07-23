@@ -1,6 +1,9 @@
 package shop.microservices.core.review.persistence;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 @Entity
 @Table(name = "reviews", indexes = {
@@ -15,10 +18,15 @@ public class ReviewEntity {
     @Version
     private int version;
 
+    @Min(0)
     private int productId;
+    @Min(0)
     private int reviewId;
+    @NotBlank
     private String author;
+    @NotBlank
     private String subject;
+    @Size(min = 50, max = 200)
     private String content;
 
     public ReviewEntity() {

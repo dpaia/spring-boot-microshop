@@ -17,7 +17,7 @@ CREATE TABLE reviews
     review_id  INT NOT NULL,
     author     VARCHAR(255),
     subject    VARCHAR(255),
-    content    TEXT,
+    content    VARCHAR(200),
     PRIMARY KEY (id),
     UNIQUE INDEX reviews_unique_idx (product_id, review_id)
 );

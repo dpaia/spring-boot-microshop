@@ -7,7 +7,7 @@ import org.springframework.core.env.Environment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@SpringBootTest
+@SpringBootTest(properties = {"spring.flyway.enabled: false"})
 public class ReviewServiceApplicationTests {
 
     @Autowired
