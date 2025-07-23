@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import shop.microservices.core.review.persistence.ReviewEntity;
 import shop.microservices.core.review.persistence.ReviewRepository;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -36,7 +37,7 @@ class PersistenceTests extends MySqlTestBase {
     void setupDb() {
         repository.deleteAll();
 
-        ReviewEntity entity = new ReviewEntity(1, 2, "a", "s", REVIEW_CONTENT);
+        ReviewEntity entity = new ReviewEntity(1, 2, "a", "s", REVIEW_CONTENT, LocalDate.now());
         savedEntity = repository.save(entity);
 
         assertEqualsReview(entity, savedEntity);
@@ -44,7 +45,7 @@ class PersistenceTests extends MySqlTestBase {
 
     @Test
     void create() {
-        ReviewEntity newEntity = new ReviewEntity(1, 3, "a", "s", REVIEW_CONTENT);
+        ReviewEntity newEntity = new ReviewEntity(1, 3, "a", "s", REVIEW_CONTENT, LocalDate.now());
         repository.save(newEntity);
 
         ReviewEntity foundEntity = repository.findById(newEntity.getId()).get();
@@ -80,7 +81,7 @@ class PersistenceTests extends MySqlTestBase {
     @Test
     void duplicateError() {
         assertThrows(DataIntegrityViolationException.class, () -> {
-            ReviewEntity entity = new ReviewEntity(1, 2, "a", "s", REVIEW_CONTENT);
+            ReviewEntity entity = new ReviewEntity(1, 2, "a", "s", REVIEW_CONTENT, LocalDate.now());
             repository.save(entity);
         });
     }

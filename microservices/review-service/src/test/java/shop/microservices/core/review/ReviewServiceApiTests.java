@@ -1,6 +1,8 @@
 package shop.microservices.core.review;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +13,9 @@ import org.springframework.test.json.AbstractJsonContentAssert;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import shop.api.core.review.Review;
 import shop.microservices.core.review.persistence.ReviewRepository;
+import shop.util.http.LocalDateConverter;
+
+import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
@@ -127,11 +132,11 @@ class ReviewServiceApiTests extends MySqlTestBase {
     }
 
     private AbstractJsonContentAssert<?> postAndVerifyReview(int productId, int reviewId, HttpStatus expectedStatus) {
-        Review review = new Review(productId, reviewId, "Author " + reviewId, "Subject " + reviewId, REVIEW_CONTENT + reviewId, "SA");
+        Review review = new Review(productId, reviewId, "Author " + reviewId, "Subject " + reviewId, REVIEW_CONTENT + reviewId, LocalDate.now(), "SA");
         return mockMvcTester.post()
                 .uri("/review")
                 .contentType(APPLICATION_JSON)
-                .content(new Gson().toJson(review))
+                .content(gson().toJson(review))
                 .exchange()
                 .assertThat()
                 .hasStatus(expectedStatus)
@@ -148,5 +153,11 @@ class ReviewServiceApiTests extends MySqlTestBase {
                 .assertThat()
                 .hasStatus(expectedStatus)
                 .bodyJson();
+    }
+
+    private static Gson gson() {
+        GsonBuilder builder = new GsonBuilder();
+        builder.registerTypeAdapter(new TypeToken<LocalDate>(){}.getType(), new LocalDateConverter());
+        return builder.create();
     }
 }
