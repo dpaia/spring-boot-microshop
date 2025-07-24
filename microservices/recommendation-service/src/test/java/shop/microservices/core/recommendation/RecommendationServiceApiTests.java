@@ -21,6 +21,8 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 @SpringBootTest(webEnvironment = RANDOM_PORT)
 public class RecommendationServiceApiTests extends MongoDbTestBase {
 
+    private static final String RECOMMENDATION_CONTENT = "Lorem ipsum dolor sit amet, consetetur sadipscingw";
+
     @Autowired
     private MockMvcTester mockMvcTester;
 
@@ -120,7 +122,7 @@ public class RecommendationServiceApiTests extends MongoDbTestBase {
     }
 
     private AbstractJsonContentAssert<?> postAndVerifyRecommendation(int productId, int recommendationId, HttpStatus expectedStatus) {
-        Recommendation recommendation = new Recommendation(productId, recommendationId, "Author " + recommendationId, recommendationId, "Content " + recommendationId, "SA");
+        Recommendation recommendation = new Recommendation(productId, recommendationId, "Author " + recommendationId, recommendationId, RECOMMENDATION_CONTENT + recommendationId, "SA");
         return mockMvcTester.post()
                 .uri("/recommendation")
                 .contentType(APPLICATION_JSON)
