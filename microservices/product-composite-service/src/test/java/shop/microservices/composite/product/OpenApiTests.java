@@ -8,7 +8,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 @AutoConfigureMockMvc
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
+        "eureka.client.enabled=false"
+})
 public class OpenApiTests {
 
     @Autowired

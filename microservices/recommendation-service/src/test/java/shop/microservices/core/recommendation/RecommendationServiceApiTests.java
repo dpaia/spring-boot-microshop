@@ -23,7 +23,7 @@ import static shop.api.event.Event.Type.CREATE;
 import static shop.api.event.Event.Type.DELETE;
 
 @SuppressWarnings("DataFlowIssue")
-@SpringBootTest(webEnvironment = RANDOM_PORT)
+@SpringBootTest(webEnvironment = RANDOM_PORT, properties = {"eureka.client.enabled=false"})
 class RecommendationServiceApiTests extends MongoDbTestBase {
 
     private static final String RECOMMENDATION_CONTENT = "Lorem ipsum dolor sit amet, consetetur sadipscingw";

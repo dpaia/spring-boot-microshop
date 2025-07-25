@@ -3,16 +3,20 @@ server.port: 7001
 
 spring.config.import: classpath:openapi-config.yml
 
-app:
-  product-service:
-    host: localhost
-    port: 7002
-  recommendation-service:
-    host: localhost
-    port: 7003
-  review-service:
-    host: localhost
-    port: 7004
+spring.application.name: product-composite
+
+app.eureka-server: localhost
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://${app.eureka-server}:8761/eureka/
+    initialInstanceInfoReplicationIntervalSeconds: 5
+    registryFetchIntervalSeconds: 5
+  instance:
+    leaseRenewalIntervalInSeconds: 5
+    leaseExpirationDurationInSeconds: 5
+
 spring.cloud.stream:
   defaultBinder: rabbit
   default.contentType: application/json
@@ -47,6 +51,8 @@ management.endpoints.web.exposure.include: "*"
 spring.config.activate.on-profile: docker
 
 server.port: 8080
+
+app.eureka-server: eureka
 
 app:
   product-service:
