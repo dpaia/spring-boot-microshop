@@ -12,8 +12,6 @@ import shop.util.http.ServiceUtil;
 
 import java.util.List;
 
-import static shop.microservices.core.review.services.MappingUtils.*;
-
 @RestController
 public class ReviewServiceImpl implements ReviewService {
 
@@ -21,19 +19,22 @@ public class ReviewServiceImpl implements ReviewService {
 
     private final ServiceUtil serviceUtil;
 
+    private final ReviewMapper reviewMapper;
+
     @Autowired
-    public ReviewServiceImpl(ReviewRepository repository, ServiceUtil serviceUtil) {
+    public ReviewServiceImpl(ReviewRepository repository, ServiceUtil serviceUtil, ReviewMapper reviewMapper) {
         this.repository = repository;
         this.serviceUtil = serviceUtil;
+        this.reviewMapper = reviewMapper;
     }
 
     @Override
     public Review createReview(Review body) {
         try {
-            ReviewEntity entity = apiToEntity(body);
+            ReviewEntity entity = reviewMapper.apiToEntity(body);
             ReviewEntity newEntity = repository.save(entity);
 
-            return entityToApi(newEntity);
+            return reviewMapper.entityToApi(newEntity);
         } catch (DataIntegrityViolationException dive) {
             throw new InvalidInputException("Duplicate key, Product Id: " + body.productId() + ", Review Id:" + body.reviewId());
         }
@@ -45,7 +46,7 @@ public class ReviewServiceImpl implements ReviewService {
             throw new InvalidInputException("Invalid productId: " + productId);
 
         List<ReviewEntity> entityList = repository.findByProductId(productId);
-        return entityListToApiList(entityList)
+        return reviewMapper.entityListToApiList(entityList)
                 .stream()
                 .map(r -> r.withServiceAddress(serviceUtil.getServiceAddress()))
                 .toList();
