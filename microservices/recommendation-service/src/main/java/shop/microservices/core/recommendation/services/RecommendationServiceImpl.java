@@ -11,8 +11,6 @@ import shop.util.http.ServiceUtil;
 
 import java.util.List;
 
-import static shop.microservices.core.recommendation.services.MappingUtils.*;
-
 @RestController
 public class RecommendationServiceImpl implements RecommendationService {
 
@@ -20,18 +18,21 @@ public class RecommendationServiceImpl implements RecommendationService {
 
     private final ServiceUtil serviceUtil;
 
-    public RecommendationServiceImpl(RecommendationRepository repository, ServiceUtil serviceUtil) {
+    private final RecommendationMapper recommendationMapper;
+
+    public RecommendationServiceImpl(RecommendationRepository repository, ServiceUtil serviceUtil, RecommendationMapper recommendationMapper) {
         this.repository = repository;
         this.serviceUtil = serviceUtil;
+        this.recommendationMapper = recommendationMapper;
     }
 
     @Override
     public Recommendation createRecommendation(Recommendation body) {
         try {
-            RecommendationEntity entity = apiToEntity(body);
+            RecommendationEntity entity = recommendationMapper.apiToEntity(body);
             RecommendationEntity newEntity = repository.save(entity);
 
-            return entityToApi(newEntity);
+            return recommendationMapper.entityToApi(newEntity);
 
         } catch (DuplicateKeyException dke) {
             throw new InvalidInputException("Duplicate key, Product Id: " + body.productId() + ", Recommendation Id:" + body.recommendationId());
@@ -46,7 +47,7 @@ public class RecommendationServiceImpl implements RecommendationService {
 
         List<RecommendationEntity> entityList = repository.findByProductId(productId);
 
-        return entityListToApiList(entityList)
+        return recommendationMapper.entityListToApiList(entityList)
                 .stream()
                 .map(r -> r.withServiceAddress(serviceUtil.getServiceAddress()))
                 .toList();
