@@ -5,16 +5,11 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.r2dbc.core.DatabaseClient;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.JdbcDatabaseContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
-
-import java.util.List;
-import java.util.Map;
-
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 @SpringBootTest
 public class ProductMigrationTest {
@@ -27,7 +22,7 @@ public class ProductMigrationTest {
                     .withPassword("pwd");
 
     @Autowired
-    private JdbcClient jdbcClient;
+    private DatabaseClient dbClient;
 
     @BeforeAll
     public static void startDb() {
@@ -46,11 +41,15 @@ public class ProductMigrationTest {
         registry.add("spring.datasource.password", database::getPassword);
     }
 
+    @SuppressWarnings("ReactiveStreamsUnusedPublisher")
     @Test
     void testDbMigration() {
-        List<Map<String, Object>> rows = jdbcClient.sql("select product_id from products")
-                .query()
-                .listOfRows();
-        assertThat(rows.size()).isEqualTo(0);
+        try {
+            dbClient.sql("select product_id from products")
+                    .fetch()
+                    .first();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

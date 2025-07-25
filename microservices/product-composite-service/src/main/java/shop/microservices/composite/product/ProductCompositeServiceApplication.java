@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Import;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
 
 @SpringBootApplication
 @ComponentScan("shop")
@@ -17,7 +17,7 @@ public class ProductCompositeServiceApplication {
     }
 
     @Bean
-    RestTemplate restTemplate() {
-        return new RestTemplate();
+    WebClient webClient() {
+        return WebClient.create();
     }
 }

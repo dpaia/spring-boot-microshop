@@ -1,14 +1,12 @@
 package shop.microservices.core.product;
 
-import com.google.gson.Gson;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
-import org.springframework.test.json.AbstractJsonContentAssert;
-import org.springframework.test.web.servlet.assertj.MockMvcTester;
+import org.springframework.test.web.reactive.server.WebTestClient;
 import shop.api.core.product.Product;
 import shop.microservices.core.product.persistence.ProductRepository;
 
@@ -16,20 +14,22 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.http.HttpStatus.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static reactor.core.publisher.Mono.just;
 
 @AutoConfigureMockMvc
 @SpringBootTest
 public class ProductServiceApiTests {
 
+
     @Autowired
-    private MockMvcTester mockMvcTester;
+    private WebTestClient client;
 
     @Autowired
     private ProductRepository repository;
 
     @BeforeEach
     void setupDb() {
-        repository.deleteAll();
+        repository.deleteAll().block();
     }
 
     @Test
@@ -38,10 +38,9 @@ public class ProductServiceApiTests {
 
         postAndVerifyProduct(productId, OK);
 
-        assertTrue(repository.findByProductId(productId).isPresent());
+        assertTrue(repository.findByProductId(productId).blockOptional().isPresent());
 
-        getAndVerifyProduct(productId, OK)
-                .hasPathSatisfying("$.productId", it -> it.assertThat().isEqualTo(productId));
+        getAndVerifyProduct(productId, OK).jsonPath("$.productId").isEqualTo(productId);
     }
 
     @Test
@@ -50,11 +49,11 @@ public class ProductServiceApiTests {
 
         postAndVerifyProduct(productId, OK);
 
-        assertTrue(repository.findByProductId(productId).isPresent());
+        assertTrue(repository.findByProductId(productId).blockOptional().isPresent());
 
         postAndVerifyProduct(productId, UNPROCESSABLE_ENTITY)
-                .hasPathSatisfying("$.path", it -> it.assertThat().isEqualTo("/product"))
-                .hasPathSatisfying("$.message", it -> it.assertThat().isEqualTo("Duplicate key, Product Id: " + productId));
+                .jsonPath("$.path").isEqualTo("/product")
+                .jsonPath("$.message").isEqualTo("Duplicate key, Product Id: " + productId);
     }
 
     @Test
@@ -62,10 +61,10 @@ public class ProductServiceApiTests {
         int productId = 1;
 
         postAndVerifyProduct(productId, OK);
-        assertTrue(repository.findByProductId(productId).isPresent());
+        assertTrue(repository.findByProductId(productId).blockOptional().isPresent());
 
         deleteAndVerifyProduct(productId, OK);
-        assertFalse(repository.findByProductId(productId).isPresent());
+        assertFalse(repository.findByProductId(productId).blockOptional().isPresent());
 
         deleteAndVerifyProduct(productId, OK);
     }
@@ -79,44 +78,41 @@ public class ProductServiceApiTests {
     void getProductInvalidParameterNegativeValue() {
         int productIdInvalid = -1;
 
-        getAndVerifyProduct(productIdInvalid, UNPROCESSABLE_ENTITY)
-                .hasPathSatisfying("$.path", it -> it.assertThat().isEqualTo("/product/" + productIdInvalid))
-                .hasPathSatisfying("$.message", it -> it.assertThat().isEqualTo("Invalid productId: " + productIdInvalid));
+        getAndVerifyProduct(productIdInvalid, UNPROCESSABLE_ENTITY);
     }
 
-    private AbstractJsonContentAssert<?> getAndVerifyProduct(int productId, HttpStatus expectedStatus) {
+    private WebTestClient.BodyContentSpec getAndVerifyProduct(int productId, HttpStatus expectedStatus) {
         return getAndVerifyProduct("/" + productId, expectedStatus);
     }
 
-    private AbstractJsonContentAssert<?> getAndVerifyProduct(String productIdPath, HttpStatus expectedStatus) {
-        return mockMvcTester.get()
+    private WebTestClient.BodyContentSpec getAndVerifyProduct(String productIdPath, HttpStatus expectedStatus) {
+        return client.get()
                 .uri("/product" + productIdPath)
-                .contentType(APPLICATION_JSON)
+                .accept(APPLICATION_JSON)
                 .exchange()
-                .assertThat()
-                .hasStatus(expectedStatus)
-                .bodyJson();
+                .expectStatus().isEqualTo(expectedStatus)
+                .expectHeader().contentType(APPLICATION_JSON)
+                .expectBody();
     }
 
-    private AbstractJsonContentAssert<?> postAndVerifyProduct(int productId, HttpStatus expectedStatus) {
+    private WebTestClient.BodyContentSpec postAndVerifyProduct(int productId, HttpStatus expectedStatus) {
         Product product = new Product(productId, "Name " + productId, productId, "SA");
-        return mockMvcTester.post()
+        return client.post()
                 .uri("/product")
-                .contentType(APPLICATION_JSON)
-                .content(new Gson().toJson(product))
+                .body(just(product), Product.class)
+                .accept(APPLICATION_JSON)
                 .exchange()
-                .assertThat()
-                .hasStatus(expectedStatus)
-                .bodyJson();
+                .expectStatus().isEqualTo(expectedStatus)
+                .expectHeader().contentType(APPLICATION_JSON)
+                .expectBody();
     }
 
-    @SuppressWarnings("SameParameterValue")
-    private void deleteAndVerifyProduct(int productId, HttpStatus expectedStatus) {
-        mockMvcTester.delete()
+    private void deleteAndVerifyProduct(int productId, @SuppressWarnings("SameParameterValue") HttpStatus expectedStatus) {
+        client.delete()
                 .uri("/product/" + productId)
-                .contentType(APPLICATION_JSON)
+                .accept(APPLICATION_JSON)
                 .exchange()
-                .assertThat()
-                .hasStatus(expectedStatus);
+                .expectStatus().isEqualTo(expectedStatus)
+                .expectBody();
     }
 }

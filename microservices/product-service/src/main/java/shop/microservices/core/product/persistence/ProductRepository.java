@@ -1,12 +1,8 @@
 package shop.microservices.core.product.persistence;
 
-import org.springframework.data.repository.CrudRepository;
-import org.springframework.stereotype.Repository;
+import org.springframework.data.repository.reactive.ReactiveCrudRepository;
+import reactor.core.publisher.Mono;
 
-import java.util.Optional;
-
-@Repository
-public interface ProductRepository extends CrudRepository<ProductEntity, Integer> {
-
-    Optional<ProductEntity> findByProductId(int productId);
+public interface ProductRepository extends ReactiveCrudRepository<ProductEntity, Integer> {
+    Mono<ProductEntity> findByProductId(int productId);
 }
