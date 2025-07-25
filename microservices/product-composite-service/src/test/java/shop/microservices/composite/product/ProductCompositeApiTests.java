@@ -14,14 +14,14 @@ import shop.api.core.product.Product;
 import shop.api.core.recommendation.Recommendation;
 import shop.api.core.review.Review;
 import shop.api.exceptions.InvalidInputException;
+import shop.api.exceptions.NotFoundException;
 import shop.microservices.composite.product.services.ProductCompositeIntegration;
 
 import java.time.LocalDate;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
-import static org.springframework.http.HttpStatus.OK;
-import static org.springframework.http.HttpStatus.UNPROCESSABLE_ENTITY;
+import static org.springframework.http.HttpStatus.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 @AutoConfigureMockMvc
@@ -29,6 +29,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 class ProductCompositeApiTests {
 
     private static final int PRODUCT_ID_OK = 1;
+    private static final int PRODUCT_ID_NOT_FOUND = 2;
     private static final int PRODUCT_ID_INVALID = 3;
 
     @Autowired
@@ -47,6 +48,8 @@ class ProductCompositeApiTests {
                 .thenReturn(Flux.just(new Review(PRODUCT_ID_OK, 1, "author", "subject", "content", LocalDate.now(), "mock address")));
         when(compositeIntegration.getProduct(PRODUCT_ID_INVALID))
                 .thenThrow(new InvalidInputException("INVALID: " + PRODUCT_ID_INVALID));
+        when(compositeIntegration.getProduct(PRODUCT_ID_NOT_FOUND))
+                .thenThrow(new NotFoundException("NOT FOUND: " + PRODUCT_ID_NOT_FOUND));
     }
 
     @Test
@@ -60,6 +63,13 @@ class ProductCompositeApiTests {
     @Test
     void getProductInvalidInput() {
         getAndVerifyProduct(PRODUCT_ID_INVALID, UNPROCESSABLE_ENTITY);
+    }
+
+    @Test
+    void getProductNotFound() {
+        getAndVerifyProduct(PRODUCT_ID_NOT_FOUND, NOT_FOUND)
+                .jsonPath("$.path").isEqualTo("/product-composite/" + PRODUCT_ID_NOT_FOUND)
+                .jsonPath("$.message").isEqualTo("NOT FOUND: " + PRODUCT_ID_NOT_FOUND);
     }
 
     private WebTestClient.BodyContentSpec getAndVerifyProduct(int productId, HttpStatus expectedStatus) {

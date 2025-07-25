@@ -7,6 +7,7 @@ import reactor.core.publisher.Mono;
 import shop.api.core.product.Product;
 import shop.api.core.product.ProductService;
 import shop.api.exceptions.InvalidInputException;
+import shop.api.exceptions.NotFoundException;
 import shop.microservices.core.product.persistence.ProductEntity;
 import shop.microservices.core.product.persistence.ProductRepository;
 import shop.util.http.ServiceUtil;
@@ -51,6 +52,7 @@ public class ProductServiceImpl implements ProductService {
         }
 
         return repository.findByProductId(productId)
+                .switchIfEmpty(Mono.error(new NotFoundException("No product found for productId: " + productId)))
                 .map(mapper::entityToApi)
                 .map(e -> e.withServiceAddress(serviceUtil.getServiceAddress()));
     }
