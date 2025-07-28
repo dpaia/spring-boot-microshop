@@ -100,6 +100,14 @@ class ProductServiceApiTests extends PostgresTestBase {
                 .jsonPath("$.message").isEqualTo("Invalid productId: " + productIdInvalid);
     }
 
+    @Test
+    void saveInvalidProduct() {
+        Product product = new Product(1, "", 0, "SA");
+        Event<Integer, Product> event = new Event<>(CREATE, 0, product);
+
+        assertThrows(InvalidInputException.class, () -> messageProcessor.accept(event));
+    }
+
     private WebTestClient.BodyContentSpec getAndVerifyProduct(int productId, HttpStatus expectedStatus) {
         return getAndVerifyProduct("/" + productId, expectedStatus);
     }
