@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import shop.api.composite.product.*;
 import shop.api.core.product.Product;
@@ -152,5 +153,11 @@ public class ProductCompositeServiceImpl implements ProductCompositeService {
             LOG.warn("deleteCompositeProduct failed: {}", re.toString());
             throw re;
         }
+    }
+
+    @Override
+    public Flux<ReviewSummary> getReviews(int productId) {
+        return integration.getReviews(productId)
+                .map(r -> new ReviewSummary(r.reviewId(), r.author(), r.subject(), r.content(), r.rating()));
     }
 }
