@@ -84,7 +84,7 @@ class MessagingTests {
     void createCompositeProduct2() {
         ProductAggregate composite = new ProductAggregate(1, "name", 1,
                 singletonList(new RecommendationSummary(1, "a", 1, "c")),
-                singletonList(new ReviewSummary(1, "a", "s", "c")), null);
+                singletonList(new ReviewSummary(1, "a", "s", "c", 4)), null);
         postAndVerifyProduct(composite, ACCEPTED);
 
         final List<String> productMessages = getMessages("products");
@@ -112,7 +112,7 @@ class MessagingTests {
 
         ReviewSummary rev = composite.reviews().getFirst();
         Event<Integer, Product> expectedReviewEvent =
-                new Event(CREATE, composite.productId(), new Review(composite.productId(), rev.reviewId(), rev.author(), rev.subject(), rev.content(), LocalDate.now(), null));
+                new Event(CREATE, composite.productId(), new Review(composite.productId(), rev.reviewId(), rev.author(), rev.subject(), rev.content(), rev.rating(), LocalDate.now(), null));
         assertThat(reviewMessages.getFirst(), is(sameEventExceptCreatedAt(expectedReviewEvent)));
     }
 

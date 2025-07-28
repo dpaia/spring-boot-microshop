@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import org.hibernate.validator.constraints.Range;
 
 import java.time.LocalDate;
 
@@ -31,18 +32,21 @@ public class ReviewEntity {
     private String subject;
     @Size(min = 50, max = 200)
     private String content;
+    @Range(min = 1, max = 5)
+    private int rating;
     @NotNull
     private LocalDate date;
 
     public ReviewEntity() {
     }
 
-    public ReviewEntity(int productId, int reviewId, String author, String subject, String content, LocalDate date) {
+    public ReviewEntity(int productId, int reviewId, String author, String subject, String content, int rating, LocalDate date) {
         this.productId = productId;
         this.reviewId = reviewId;
         this.author = author;
         this.subject = subject;
         this.content = content;
+        this.rating = rating;
         this.date = date;
     }
 
@@ -100,6 +104,14 @@ public class ReviewEntity {
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    public int getRating() {
+        return rating;
+    }
+
+    public void setRating(int rating) {
+        this.rating = rating;
     }
 
     public LocalDate getDate() {
