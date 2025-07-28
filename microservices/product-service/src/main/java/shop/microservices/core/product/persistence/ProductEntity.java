@@ -1,5 +1,7 @@
 package shop.microservices.core.product.persistence;
 
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Version;
 import org.springframework.data.relational.core.mapping.Table;
@@ -13,10 +15,13 @@ public class ProductEntity {
     @Version
     private int version;
 
+    @Min(1)
     private int productId;
 
+    @Size(min = 5, max = 100)
     private String name;
 
+    @Min(1)
     private int weight;
 
     public ProductEntity() {
