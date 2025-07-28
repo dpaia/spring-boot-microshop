@@ -54,6 +54,12 @@ public interface ProductCompositeService {
             produces = "application/json")
     Mono<ProductAggregate> getProduct(@PathVariable int productId);
 
+    @GetMapping(
+            value = "/product-composite",
+            produces = "application/json"
+    )
+    Flux<ProductAggregate> getAllProducts();
+
     /**
      * Sample usage: "curl -X DELETE $HOST:$PORT/product-composite/1".
      *
