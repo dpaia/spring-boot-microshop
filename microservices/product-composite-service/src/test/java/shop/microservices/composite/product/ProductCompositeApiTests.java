@@ -72,6 +72,19 @@ class ProductCompositeApiTests {
                 .jsonPath("$.message").isEqualTo("NOT FOUND: " + PRODUCT_ID_NOT_FOUND);
     }
 
+    @Test
+    void getReviewsByProductId() {
+        client.get()
+                .uri("/product-composite/reviews/" + PRODUCT_ID_OK)
+                .accept(APPLICATION_JSON)
+                .exchange()
+                .expectStatus().isEqualTo(OK)
+                .expectHeader().contentType(APPLICATION_JSON)
+                .expectBody()
+                .jsonPath("$.length()").isEqualTo(1)
+                .jsonPath("$[0].rating").isEqualTo(4);
+    }
+
     private WebTestClient.BodyContentSpec getAndVerifyProduct(int productId, HttpStatus expectedStatus) {
         return client.get()
                 .uri("/product-composite/" + productId)

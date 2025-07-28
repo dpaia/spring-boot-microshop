@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Tag(name = "ProductComposite", description = "REST API for composite product information.")
@@ -68,4 +69,19 @@ public interface ProductCompositeService {
     @ResponseStatus(HttpStatus.ACCEPTED)
     @DeleteMapping(value = "/product-composite/{productId}")
     Mono<Void> deleteProduct(@PathVariable int productId);
+
+    /**
+     * Sample usage: "curl $HOST:$PORT/product-composite/reviews/1".
+     *
+     * @param productId ID of the product
+     * @return the list of reviews for a product
+     */
+    @Operation(
+            summary = "${api.product-composite.get-reviews.description}",
+            description = "${api.product-composite.get-reviews.notes}")
+    @GetMapping(
+            value = "/product-composite/reviews/{productId}",
+            produces = "application/json"
+    )
+    Flux<ReviewSummary> getReviews(@PathVariable int productId);
 }
