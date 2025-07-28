@@ -37,7 +37,7 @@ class PersistenceTests extends MySqlTestBase {
     void setupDb() {
         repository.deleteAll();
 
-        ReviewEntity entity = new ReviewEntity(1, 2, "a", "s", REVIEW_CONTENT, LocalDate.now());
+        ReviewEntity entity = new ReviewEntity(1, 2, "a", "s", REVIEW_CONTENT, 4, LocalDate.now());
         savedEntity = repository.save(entity);
 
         assertEqualsReview(entity, savedEntity);
@@ -45,7 +45,7 @@ class PersistenceTests extends MySqlTestBase {
 
     @Test
     void create() {
-        ReviewEntity newEntity = new ReviewEntity(1, 3, "a", "s", REVIEW_CONTENT, LocalDate.now());
+        ReviewEntity newEntity = new ReviewEntity(1, 3, "a", "s", REVIEW_CONTENT, 4, LocalDate.now());
         repository.save(newEntity);
 
         ReviewEntity foundEntity = repository.findById(newEntity.getId()).get();
@@ -81,7 +81,7 @@ class PersistenceTests extends MySqlTestBase {
     @Test
     void duplicateError() {
         assertThrows(DataIntegrityViolationException.class, () -> {
-            ReviewEntity entity = new ReviewEntity(1, 2, "a", "s", REVIEW_CONTENT, LocalDate.now());
+            ReviewEntity entity = new ReviewEntity(1, 2, "a", "s", REVIEW_CONTENT, 4, LocalDate.now());
             repository.save(entity);
         });
     }
