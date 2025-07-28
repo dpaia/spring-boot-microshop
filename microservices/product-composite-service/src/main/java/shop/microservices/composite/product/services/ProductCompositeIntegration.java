@@ -34,6 +34,7 @@ import static reactor.core.publisher.Flux.empty;
 import static shop.api.event.Event.Type.CREATE;
 import static shop.api.event.Event.Type.DELETE;
 
+@SuppressWarnings("HttpUrlsUsage")
 @Component
 public class ProductCompositeIntegration implements ProductService, RecommendationService, ReviewService {
 
@@ -83,6 +84,18 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
     }
 
     @Override
+    public Flux<Product> getAllProducts() {
+        String url = PRODUCT_SERVICE_URL + "/product";
+
+        return webClient.get()
+                .uri(url)
+                .retrieve()
+                .bodyToFlux(Product.class)
+                .log(LOG.getName(), FINE)
+                .onErrorMap(WebClientResponseException.class, this::handleException);
+    }
+
+    @Override
     public Mono<Void> deleteProduct(int productId) {
         return Mono.fromRunnable(() -> sendMessage("products-out-0", new Event<>(DELETE, productId, null)))
                 .subscribeOn(publishEventScheduler).then();
@@ -108,7 +121,7 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
                 .retrieve()
                 .bodyToFlux(Recommendation.class)
                 .log(LOG.getName(), FINE)
-                .onErrorResume(error -> empty());
+                .onErrorResume(_ -> empty());
     }
 
     @Override
@@ -162,11 +175,12 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
         url += "/actuator/health";
         LOG.debug("Will call the Health API on URL: {}", url);
         return webClient.get().uri(url).retrieve().bodyToMono(String.class)
-                .map(s -> new Health.Builder().up().build())
+                .map(_ -> new Health.Builder().up().build())
                 .onErrorResume(ex -> Mono.just(new Health.Builder().down(ex).build()))
                 .log(LOG.getName(), FINE);
     }
 
+    @SuppressWarnings("rawtypes")
     private void sendMessage(String bindingName, Event event) {
         LOG.debug("Sending a {} message to {}", event.getEventType(), bindingName);
         Message<?> message = MessageBuilder.withPayload(event)

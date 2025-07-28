@@ -96,6 +96,20 @@ public class ProductCompositeServiceImpl implements ProductCompositeService {
                 .log(LOG.getName(), FINE);
     }
 
+    @SuppressWarnings("unchecked")
+    @Override
+    public Flux<ProductAggregate> getAllProducts() {
+        return integration.getAllProducts().flatMap(p -> Mono.zip(
+                values ->
+                        createProductAggregate(
+                                p,
+                                (List<Recommendation>) values[0],
+                                (List<Review>) values[1],
+                                serviceUtil.getServiceAddress()),
+                integration.getRecommendations(p.productId()).collectList(),
+                integration.getReviews(p.productId()).collectList()));
+    }
+
     private ProductAggregate createProductAggregate(
             Product product,
             List<Recommendation> recommendations,
