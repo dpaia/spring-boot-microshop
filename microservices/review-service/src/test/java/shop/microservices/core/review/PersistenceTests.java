@@ -25,7 +25,14 @@ import static org.springframework.transaction.annotation.Propagation.NOT_SUPPORT
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class PersistenceTests extends MySqlTestBase {
 
-    private static final String REVIEW_CONTENT = "Lorem ipsum dolor sit amet, consetetur sadipscingw";
+    // Exactly 50 characters - minimum boundary
+    private static final String REVIEW_CONTENT_MIN = "Lorem ipsum dolor sit amet, consetetur sadipscingw";
+    // Exactly 100 characters - middle range
+    private static final String REVIEW_CONTENT_MID = "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt.....";
+    // Exactly 200 characters - maximum boundary
+    private static final String REVIEW_CONTENT_MAX = "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo.........";
+    
+    private static final String REVIEW_CONTENT = REVIEW_CONTENT_MIN;
 
     @Autowired
     private ReviewRepository repository;
@@ -51,6 +58,36 @@ class PersistenceTests extends MySqlTestBase {
         assertEqualsReview(newEntity, foundEntity);
 
         assertEquals(2, repository.count());
+    }
+
+    @Test
+    void createWithMinimumContentLength() {
+        ReviewEntity newEntity = new ReviewEntity(1, 4, "author", "subject", REVIEW_CONTENT_MIN);
+        repository.save(newEntity);
+
+        ReviewEntity foundEntity = repository.findById(newEntity.getId()).get();
+        assertEquals(50, foundEntity.getContent().length());
+        assertEqualsReview(newEntity, foundEntity);
+    }
+
+    @Test
+    void createWithMaximumContentLength() {
+        ReviewEntity newEntity = new ReviewEntity(1, 5, "author", "subject", REVIEW_CONTENT_MAX);
+        repository.save(newEntity);
+
+        ReviewEntity foundEntity = repository.findById(newEntity.getId()).get();
+        assertEquals(200, foundEntity.getContent().length());
+        assertEqualsReview(newEntity, foundEntity);
+    }
+
+    @Test
+    void createWithMidRangeContentLength() {
+        ReviewEntity newEntity = new ReviewEntity(1, 6, "author", "subject", REVIEW_CONTENT_MID);
+        repository.save(newEntity);
+
+        ReviewEntity foundEntity = repository.findById(newEntity.getId()).get();
+        assertEquals(100, foundEntity.getContent().length());
+        assertEqualsReview(newEntity, foundEntity);
     }
 
     @Test

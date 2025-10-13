@@ -1,5 +1,6 @@
 package shop.api.core.review;
 
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,7 +21,7 @@ public interface ReviewService {
             value = "/review",
             consumes = "application/json",
             produces = "application/json")
-    Review createReview(@RequestBody Review body);
+    Review createReview(@Valid @RequestBody Review body);
 
     /**
      * Sample usage: "curl -X DELETE $HOST:$PORT/review?productId=1".

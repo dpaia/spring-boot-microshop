@@ -111,6 +111,181 @@ class ReviewServiceApiTests extends MySqlTestBase {
                 .hasPathSatisfying("$.message", it -> it.assertThat().isEqualTo("Invalid productId: " + productIdInvalid));
     }
 
+    @Test
+    void createReviewWithNegativeProductId() {
+        String invalidReviewJson = """
+                {
+                    "productId": -1,
+                    "reviewId": 1,
+                    "author": "Author",
+                    "subject": "Subject",
+                    "content": "%s",
+                    "serviceAddress": "SA"
+                }
+                """.formatted(REVIEW_CONTENT);
+
+        mockMvcTester.post()
+                .uri("/review")
+                .contentType(APPLICATION_JSON)
+                .content(invalidReviewJson)
+                .exchange()
+                .assertThat()
+                .hasStatus(BAD_REQUEST)
+                .bodyJson()
+                .hasPathSatisfying("$.path", it -> it.assertThat().isEqualTo("/review"))
+                .hasPathSatisfying("$.message", it -> it.assertThat().asString().contains("productId"));
+    }
+
+    @Test
+    void createReviewWithNegativeReviewId() {
+        String invalidReviewJson = """
+                {
+                    "productId": 1,
+                    "reviewId": -1,
+                    "author": "Author",
+                    "subject": "Subject",
+                    "content": "%s",
+                    "serviceAddress": "SA"
+                }
+                """.formatted(REVIEW_CONTENT);
+
+        mockMvcTester.post()
+                .uri("/review")
+                .contentType(APPLICATION_JSON)
+                .content(invalidReviewJson)
+                .exchange()
+                .assertThat()
+                .hasStatus(BAD_REQUEST)
+                .bodyJson()
+                .hasPathSatisfying("$.path", it -> it.assertThat().isEqualTo("/review"))
+                .hasPathSatisfying("$.message", it -> it.assertThat().asString().contains("reviewId"));
+    }
+
+    @Test
+    void createReviewWithBlankAuthor() {
+        String invalidReviewJson = """
+                {
+                    "productId": 1,
+                    "reviewId": 1,
+                    "author": "",
+                    "subject": "Subject",
+                    "content": "%s",
+                    "serviceAddress": "SA"
+                }
+                """.formatted(REVIEW_CONTENT);
+
+        mockMvcTester.post()
+                .uri("/review")
+                .contentType(APPLICATION_JSON)
+                .content(invalidReviewJson)
+                .exchange()
+                .assertThat()
+                .hasStatus(BAD_REQUEST)
+                .bodyJson()
+                .hasPathSatisfying("$.path", it -> it.assertThat().isEqualTo("/review"))
+                .hasPathSatisfying("$.message", it -> it.assertThat().asString().contains("author"));
+    }
+
+    @Test
+    void createReviewWithBlankSubject() {
+        String invalidReviewJson = """
+                {
+                    "productId": 1,
+                    "reviewId": 1,
+                    "author": "Author",
+                    "subject": "",
+                    "content": "%s",
+                    "serviceAddress": "SA"
+                }
+                """.formatted(REVIEW_CONTENT);
+
+        mockMvcTester.post()
+                .uri("/review")
+                .contentType(APPLICATION_JSON)
+                .content(invalidReviewJson)
+                .exchange()
+                .assertThat()
+                .hasStatus(BAD_REQUEST)
+                .bodyJson()
+                .hasPathSatisfying("$.path", it -> it.assertThat().isEqualTo("/review"))
+                .hasPathSatisfying("$.message", it -> it.assertThat().asString().contains("subject"));
+    }
+
+    @Test
+    void createReviewWithShortContent() {
+        String invalidReviewJson = """
+                {
+                    "productId": 1,
+                    "reviewId": 1,
+                    "author": "Author",
+                    "subject": "Subject",
+                    "content": "Too short",
+                    "serviceAddress": "SA"
+                }
+                """;
+
+        mockMvcTester.post()
+                .uri("/review")
+                .contentType(APPLICATION_JSON)
+                .content(invalidReviewJson)
+                .exchange()
+                .assertThat()
+                .hasStatus(BAD_REQUEST)
+                .bodyJson()
+                .hasPathSatisfying("$.path", it -> it.assertThat().isEqualTo("/review"))
+                .hasPathSatisfying("$.message", it -> it.assertThat().asString().contains("content"));
+    }
+
+    @Test
+    void createReviewWithLongContent() {
+        String longContent = "a".repeat(201);
+        String invalidReviewJson = """
+                {
+                    "productId": 1,
+                    "reviewId": 1,
+                    "author": "Author",
+                    "subject": "Subject",
+                    "content": "%s",
+                    "serviceAddress": "SA"
+                }
+                """.formatted(longContent);
+
+        mockMvcTester.post()
+                .uri("/review")
+                .contentType(APPLICATION_JSON)
+                .content(invalidReviewJson)
+                .exchange()
+                .assertThat()
+                .hasStatus(BAD_REQUEST)
+                .bodyJson()
+                .hasPathSatisfying("$.path", it -> it.assertThat().isEqualTo("/review"))
+                .hasPathSatisfying("$.message", it -> it.assertThat().asString().contains("content"));
+    }
+
+    @Test
+    void createReviewWithMultipleValidationErrors() {
+        String invalidReviewJson = """
+                {
+                    "productId": -1,
+                    "reviewId": -1,
+                    "author": "",
+                    "subject": "",
+                    "content": "short",
+                    "serviceAddress": "SA"
+                }
+                """;
+
+        mockMvcTester.post()
+                .uri("/review")
+                .contentType(APPLICATION_JSON)
+                .content(invalidReviewJson)
+                .exchange()
+                .assertThat()
+                .hasStatus(BAD_REQUEST)
+                .bodyJson()
+                .hasPathSatisfying("$.path", it -> it.assertThat().isEqualTo("/review"));
+    }
+
     @SuppressWarnings("SameParameterValue")
     private AbstractJsonContentAssert<?> getAndVerifyReviewsByProductId(int productId, HttpStatus expectedStatus) {
         return getAndVerifyReviewsByProductId("?productId=" + productId, expectedStatus);
