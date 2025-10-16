@@ -43,20 +43,20 @@ class ReviewServiceApiTests extends MySqlTestBase {
 
     @BeforeEach
     void setupDb() {
-        repository.deleteAll();
+        repository.deleteAll().block();
     }
 
     @Test
     void getReviewsByProductId() {
         int productId = 1;
 
-        assertEquals(0, repository.findByProductId(productId).size());
+        assertEquals(0, repository.findByProductId(productId).collectList().block().size());
 
         sendCreateReviewEvent(productId, 1);
         sendCreateReviewEvent(productId, 2);
         sendCreateReviewEvent(productId, 3);
 
-        assertEquals(3, repository.findByProductId(productId).size());
+        assertEquals(3, repository.findByProductId(productId).collectList().block().size());
 
         getAndVerifyReviewsByProductId(productId, OK)
                 .jsonPath("$.length()").isEqualTo(3)
@@ -70,11 +70,11 @@ class ReviewServiceApiTests extends MySqlTestBase {
         int productId = 1;
         int reviewId = 1;
 
-        assertEquals(0, repository.count());
+        assertEquals(0, repository.count().block());
 
         sendCreateReviewEvent(productId, reviewId);
 
-        assertEquals(1, repository.count());
+        assertEquals(1, repository.count().block());
 
         InvalidInputException thrown = assertThrows(
                 InvalidInputException.class,
@@ -82,7 +82,7 @@ class ReviewServiceApiTests extends MySqlTestBase {
                 "Expected a InvalidInputException here!");
         assertEquals("Duplicate key, Product Id: 1, Review Id:1", thrown.getMessage());
 
-        assertEquals(1, repository.count());
+        assertEquals(1, repository.count().block());
     }
 
     @Test
@@ -92,10 +92,10 @@ class ReviewServiceApiTests extends MySqlTestBase {
         int reviewId = 1;
 
         sendCreateReviewEvent(productId, reviewId);
-        assertEquals(1, repository.findByProductId(productId).size());
+        assertEquals(1, repository.findByProductId(productId).collectList().block().size());
 
         sendDeleteReviewEvent(productId);
-        assertEquals(0, repository.findByProductId(productId).size());
+        assertEquals(0, repository.findByProductId(productId).collectList().block().size());
 
         sendDeleteReviewEvent(productId);
     }
