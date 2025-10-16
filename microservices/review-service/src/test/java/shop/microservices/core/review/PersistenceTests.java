@@ -117,5 +117,6 @@ class PersistenceTests extends MySqlTestBase {
         assertEquals(expectedEntity.getAuthor(), actualEntity.getAuthor());
         assertEquals(expectedEntity.getSubject(), actualEntity.getSubject());
         assertEquals(expectedEntity.getContent(), actualEntity.getContent());
+        assertEquals(expectedEntity.getDate(), actualEntity.getDate());
     }
 }

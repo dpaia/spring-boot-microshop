@@ -1,9 +1,3 @@
--- Create a database if it doesn't exist
-CREATE DATABASE IF NOT EXISTS `review-db`;
-
--- Use the review-db database
-USE `review-db`;
-
 -- Drop the tables if they exist to ensure a clean state
 DROP TABLE IF EXISTS reviews;
 DROP TABLE IF EXISTS reviews_seq;
