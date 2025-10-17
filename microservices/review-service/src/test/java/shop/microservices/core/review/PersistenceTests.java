@@ -1,29 +1,21 @@
 package shop.microservices.core.review;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
-import org.springframework.transaction.annotation.Transactional;
 import shop.microservices.core.review.persistence.ReviewEntity;
 import shop.microservices.core.review.persistence.ReviewRepository;
 
 import java.time.LocalDate;
 import java.util.List;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasSize;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED;
+import static org.junit.jupiter.api.Assertions.*;
 
-@DataJpaTest
-@Transactional(propagation = NOT_SUPPORTED)
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@SuppressWarnings("DataFlowIssue")
+@SpringBootTest
 class PersistenceTests extends MySqlTestBase {
 
     private static final String REVIEW_CONTENT = "Lorem ipsum dolor sit amet, consetetur sadipscingw";
@@ -35,10 +27,10 @@ class PersistenceTests extends MySqlTestBase {
 
     @BeforeEach
     void setupDb() {
-        repository.deleteAll();
+        repository.deleteAll().block();
 
         ReviewEntity entity = new ReviewEntity(1, 2, "a", "s", REVIEW_CONTENT, 4, LocalDate.now());
-        savedEntity = repository.save(entity);
+        savedEntity = repository.save(entity).block();
 
         assertEqualsReview(entity, savedEntity);
     }
@@ -46,35 +38,35 @@ class PersistenceTests extends MySqlTestBase {
     @Test
     void create() {
         ReviewEntity newEntity = new ReviewEntity(1, 3, "a", "s", REVIEW_CONTENT, 4, LocalDate.now());
-        repository.save(newEntity);
+        repository.save(newEntity).block();
 
-        ReviewEntity foundEntity = repository.findById(newEntity.getId()).get();
+        ReviewEntity foundEntity = repository.findById(newEntity.getId()).block();
         assertEqualsReview(newEntity, foundEntity);
 
-        assertEquals(2, repository.count());
+        assertEquals(2, repository.count().block());
     }
 
     @Test
     void update() {
         savedEntity.setAuthor("a2");
-        repository.save(savedEntity);
+        repository.save(savedEntity).block();
 
-        ReviewEntity foundEntity = repository.findById(savedEntity.getId()).get();
-        assertEquals(1, (long) foundEntity.getVersion());
+        ReviewEntity foundEntity = repository.findById(savedEntity.getId()).block();
+        assertEquals(2, (long) foundEntity.getVersion());
         assertEquals("a2", foundEntity.getAuthor());
     }
 
     @Test
     void delete() {
-        repository.delete(savedEntity);
-        Assertions.assertFalse(repository.existsById(savedEntity.getId()));
+        repository.delete(savedEntity).block();
+        assertFalse(repository.existsById(savedEntity.getId()).block());
     }
 
     @Test
     void getByProductId() {
-        List<ReviewEntity> entityList = repository.findByProductId(savedEntity.getProductId());
+        List<ReviewEntity> entityList = repository.findByProductId(savedEntity.getProductId()).collectList().block();
 
-        assertThat(entityList, hasSize(1));
+        assertEquals(1, entityList.size());
         assertEqualsReview(savedEntity, entityList.getFirst());
     }
 
@@ -82,30 +74,30 @@ class PersistenceTests extends MySqlTestBase {
     void duplicateError() {
         assertThrows(DataIntegrityViolationException.class, () -> {
             ReviewEntity entity = new ReviewEntity(1, 2, "a", "s", REVIEW_CONTENT, 4, LocalDate.now());
-            repository.save(entity);
+            repository.save(entity).block();
         });
     }
 
     @Test
     void optimisticLockError() {
         // Store the saved entity in two separate entity objects
-        ReviewEntity entity1 = repository.findById(savedEntity.getId()).get();
-        ReviewEntity entity2 = repository.findById(savedEntity.getId()).get();
+        ReviewEntity entity1 = repository.findById(savedEntity.getId()).block();
+        ReviewEntity entity2 = repository.findById(savedEntity.getId()).block();
 
         // Update the entity using the first entity object
         entity1.setAuthor("a1");
-        repository.save(entity1);
+        repository.save(entity1).block();
 
         // Update the entity using the second entity object.
         // This should fail since the second entity now holds an old version number, i.e., an Optimistic Lock Error
         assertThrows(OptimisticLockingFailureException.class, () -> {
             entity2.setAuthor("a2");
-            repository.save(entity2);
+            repository.save(entity2).block();
         });
 
         // Get the updated entity from the database and verify its new state
-        ReviewEntity updatedEntity = repository.findById(savedEntity.getId()).get();
-        assertEquals(1, updatedEntity.getVersion());
+        ReviewEntity updatedEntity = repository.findById(savedEntity.getId()).block();
+        assertEquals(2, (int) updatedEntity.getVersion());
         assertEquals("a1", updatedEntity.getAuthor());
     }
 

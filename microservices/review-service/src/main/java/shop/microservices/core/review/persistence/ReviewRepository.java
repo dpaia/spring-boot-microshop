@@ -1,12 +1,9 @@
 package shop.microservices.core.review.persistence;
 
-import org.springframework.data.repository.CrudRepository;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.r2dbc.repository.R2dbcRepository;
+import reactor.core.publisher.Flux;
 
-import java.util.List;
+public interface ReviewRepository extends R2dbcRepository<ReviewEntity, Integer> {
 
-public interface ReviewRepository extends CrudRepository<ReviewEntity, Integer> {
-
-    @Transactional(readOnly = true)
-    List<ReviewEntity> findByProductId(int productId);
+    Flux<ReviewEntity> findByProductId(int productId);
 }
