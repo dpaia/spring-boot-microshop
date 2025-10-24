@@ -2,6 +2,8 @@ package shop.api.core.review;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+
+import jakarta.validation.Valid;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -20,5 +22,5 @@ public interface ReviewService {
     @GetMapping(
             value = "/review",
             produces = "application/json")
-    Flux<Review> getReviews(@RequestParam int productId);
+    Flux<Review> getReviews(@Valid @RequestParam int productId);
 }

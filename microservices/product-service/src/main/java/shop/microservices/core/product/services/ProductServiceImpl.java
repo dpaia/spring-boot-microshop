@@ -38,7 +38,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public Mono<Product> createProduct(Product body) {
-        if (body.productId() < 1) {
+        if (body.productId() < 0) {
             throw new InvalidInputException("Invalid productId: " + body.productId());
         }
 
@@ -60,7 +60,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public Mono<Product> getProduct(int productId) {
-        if (productId < 1) {
+        if (productId < 0) {
             throw new InvalidInputException("Invalid productId: " + productId);
         }
 
@@ -79,7 +79,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public Mono<Void> deleteProduct(int productId) {
-        if (productId < 1) {
+        if (productId < 0) {
             throw new InvalidInputException("Invalid productId: " + productId);
         }
 

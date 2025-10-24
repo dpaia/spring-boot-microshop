@@ -30,6 +30,7 @@ public class ReviewEntity {
     private String author;
     @NotBlank
     private String subject;
+
     @Size(min = 50, max = 200)
     private String content;
     @Range(min = 1, max = 5)

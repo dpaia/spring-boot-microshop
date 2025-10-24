@@ -23,10 +23,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static shop.api.event.Event.Type.CREATE;
 import static shop.api.event.Event.Type.DELETE;
 
-@SpringBootTest(webEnvironment = RANDOM_PORT, properties = {
-        "spring.cloud.stream.defaultBinder=rabbit",
-        "logging.level.shop=DEBUG",
-        "eureka.client.enabled=false"})
+@SpringBootTest(webEnvironment = RANDOM_PORT, properties = {"eureka.client.enabled=false"})
 class ReviewServiceApiTests extends MySqlTestBase {
 
     private static final String REVIEW_CONTENT = "Lorem ipsum dolor sit amet, consetetur sadipscingw";

@@ -13,6 +13,7 @@ import shop.microservices.core.review.persistence.ReviewEntity;
 import shop.microservices.core.review.persistence.ReviewRepository;
 import shop.util.http.ServiceUtil;
 
+import jakarta.validation.Validator;
 import java.util.List;
 
 import static reactor.core.publisher.Mono.fromCallable;
@@ -29,22 +30,26 @@ public class ReviewServiceImpl implements ReviewService {
 
     private final Scheduler jdbcScheduler;
 
+    private final Validator validator;
+
     @Autowired
     public ReviewServiceImpl(
             ReviewRepository repository,
             ReviewMapper mapper,
             ServiceUtil serviceUtil,
-            Scheduler jdbcScheduler
+            Scheduler jdbcScheduler,
+            Validator validator
     ) {
         this.repository = repository;
         this.mapper = mapper;
         this.serviceUtil = serviceUtil;
         this.jdbcScheduler = jdbcScheduler;
+        this.validator = validator;
     }
 
     @Override
     public Mono<Review> createReview(Review body) {
-        if (body.productId() < 1) {
+        if (body.productId() < 0) {
             throw new InvalidInputException("Invalid productId: " + body.productId());
         }
         return fromCallable(() -> internalCreateReview(body))
@@ -53,10 +58,9 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     public Flux<Review> getReviews(int productId) {
-        if (productId < 1) {
+        if (productId < 0) {
             throw new InvalidInputException("Invalid productId: " + productId);
         }
-
         return fromCallable(() -> internalGetReviews(productId))
                 .flatMapMany(Flux::fromIterable)
                 .subscribeOn(jdbcScheduler);
@@ -64,10 +68,9 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     public Mono<Void> deleteReviews(int productId) {
-        if (productId < 1) {
+        if (productId < 0) {
             throw new InvalidInputException("Invalid productId: " + productId);
         }
-
         return fromRunnable(() -> internalDeleteReviews(productId))
                 .subscribeOn(jdbcScheduler)
                 .then();
@@ -76,6 +79,12 @@ public class ReviewServiceImpl implements ReviewService {
     private Review internalCreateReview(Review body) {
         try {
             ReviewEntity entity = mapper.apiToEntity(body);
+
+            var constraints = validator.validate(entity);
+            if (!constraints.isEmpty()) {
+                throw new InvalidInputException(constraints.iterator().next().getMessage());
+            }
+            
             ReviewEntity newEntity = repository.save(entity);
 
             return mapper.entityToApi(newEntity);

@@ -15,7 +15,7 @@ public class ProductEntity {
     @Version
     private int version;
 
-    @Min(1)
+    @Min(0)
     private int productId;
 
     @Size(min = 5, max = 100)
