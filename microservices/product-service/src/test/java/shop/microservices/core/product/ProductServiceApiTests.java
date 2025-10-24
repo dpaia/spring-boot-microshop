@@ -14,6 +14,7 @@ import shop.microservices.core.product.persistence.ProductRepository;
 
 import java.util.function.Consumer;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
 import static org.springframework.http.HttpStatus.*;
@@ -22,7 +23,8 @@ import static shop.api.event.Event.Type.CREATE;
 import static shop.api.event.Event.Type.DELETE;
 
 @SuppressWarnings("DataFlowIssue")
-@SpringBootTest(webEnvironment = RANDOM_PORT, properties = {"eureka.client.enabled=false"})
+@SpringBootTest(webEnvironment = RANDOM_PORT, properties = {"eureka.client.enabled=false",
+"spring.cloud.stream.defaultBinder=rabbit"})
 class ProductServiceApiTests extends PostgresTestBase {
 
     @Autowired
@@ -105,7 +107,15 @@ class ProductServiceApiTests extends PostgresTestBase {
         Product product = new Product(1, "", 0, "SA");
         Event<Integer, Product> event = new Event<>(CREATE, 0, product);
 
-        assertThrows(InvalidInputException.class, () -> messageProcessor.accept(event));
+        InvalidInputException thrown = assertThrows(
+                InvalidInputException.class,
+                () -> messageProcessor.accept(event),
+                "Expected a InvalidInputException here!");
+        
+        String errorMessage = thrown.getMessage();
+        assertThat(errorMessage)
+                .contains("name: size must be between 5 and 100")
+        .contains("weight: must be greater than or equal to 1");
     }
 
     private WebTestClient.BodyContentSpec getAndVerifyProduct(int productId, HttpStatus expectedStatus) {

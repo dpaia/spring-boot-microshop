@@ -46,7 +46,11 @@ public class ProductServiceImpl implements ProductService {
 
         var constraints = validator.validate(entity);
         if (!constraints.isEmpty()) {
-            throw new InvalidInputException(constraints.iterator().next().getMessage());
+            String errorMessages = constraints.stream()
+                    .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
+                    .reduce((msg1, msg2) -> msg1 + "; " + msg2)
+                    .orElse("Validation failed");
+            throw new InvalidInputException(errorMessages);
         }
 
         return repository.save(entity)
