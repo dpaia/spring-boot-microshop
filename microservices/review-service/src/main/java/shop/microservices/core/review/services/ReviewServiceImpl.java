@@ -5,18 +5,12 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Scheduler;
 import shop.api.core.review.Review;
 import shop.api.core.review.ReviewService;
 import shop.api.exceptions.InvalidInputException;
 import shop.microservices.core.review.persistence.ReviewEntity;
 import shop.microservices.core.review.persistence.ReviewRepository;
 import shop.util.http.ServiceUtil;
-
-import java.util.List;
-
-import static reactor.core.publisher.Mono.fromCallable;
-import static reactor.core.publisher.Mono.fromRunnable;
 
 @RestController
 public class ReviewServiceImpl implements ReviewService {
@@ -27,19 +21,15 @@ public class ReviewServiceImpl implements ReviewService {
 
     private final ServiceUtil serviceUtil;
 
-    private final Scheduler jdbcScheduler;
-
     @Autowired
     public ReviewServiceImpl(
             ReviewRepository repository,
             ReviewMapper mapper,
-            ServiceUtil serviceUtil,
-            Scheduler jdbcScheduler
+            ServiceUtil serviceUtil
     ) {
         this.repository = repository;
         this.mapper = mapper;
         this.serviceUtil = serviceUtil;
-        this.jdbcScheduler = jdbcScheduler;
     }
 
     @Override
@@ -47,8 +37,14 @@ public class ReviewServiceImpl implements ReviewService {
         if (body.productId() < 1) {
             throw new InvalidInputException("Invalid productId: " + body.productId());
         }
-        return fromCallable(() -> internalCreateReview(body))
-                .subscribeOn(jdbcScheduler);
+
+        ReviewEntity entity = mapper.apiToEntity(body);
+
+        return repository.save(entity)
+                .onErrorMap(
+                        DataIntegrityViolationException.class,
+                        _ -> new InvalidInputException("Duplicate key, Product Id: " + body.productId() + ", Review Id:" + body.reviewId()))
+                .map(mapper::entityToApi);
     }
 
     @Override
@@ -57,9 +53,9 @@ public class ReviewServiceImpl implements ReviewService {
             throw new InvalidInputException("Invalid productId: " + productId);
         }
 
-        return fromCallable(() -> internalGetReviews(productId))
-                .flatMapMany(Flux::fromIterable)
-                .subscribeOn(jdbcScheduler);
+        return repository.findByProductId(productId)
+                .map(mapper::entityToApi)
+                .map(e -> e.withServiceAddress(serviceUtil.getServiceAddress()));
     }
 
     @Override
@@ -68,32 +64,8 @@ public class ReviewServiceImpl implements ReviewService {
             throw new InvalidInputException("Invalid productId: " + productId);
         }
 
-        return fromRunnable(() -> internalDeleteReviews(productId))
-                .subscribeOn(jdbcScheduler)
+        return repository.findByProductId(productId)
+                .flatMap(repository::delete)
                 .then();
-    }
-
-    private Review internalCreateReview(Review body) {
-        try {
-            ReviewEntity entity = mapper.apiToEntity(body);
-            ReviewEntity newEntity = repository.save(entity);
-
-            return mapper.entityToApi(newEntity);
-
-        } catch (DataIntegrityViolationException dive) {
-            throw new InvalidInputException("Duplicate key, Product Id: " + body.productId() + ", Review Id:" + body.reviewId());
-        }
-    }
-
-    private List<Review> internalGetReviews(int productId) {
-        List<ReviewEntity> entityList = repository.findByProductId(productId);
-        return mapper.entityListToApiList(entityList)
-                .stream()
-                .map(e -> e.withServiceAddress(serviceUtil.getServiceAddress()))
-                .toList();
-    }
-
-    private void internalDeleteReviews(int productId) {
-        repository.deleteAll(repository.findByProductId(productId));
     }
 }

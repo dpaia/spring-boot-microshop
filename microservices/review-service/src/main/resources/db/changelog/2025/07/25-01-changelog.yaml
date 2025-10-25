@@ -1,0 +1,56 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1753431692767-1
+      author: Review.Service.Migration
+      objectQuotingStrategy: QUOTE_ONLY_RESERVED_WORDS
+      changes:
+        - createTable:
+            columns:
+              - column:
+                  autoIncrement: true
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_reviews
+                  name: id
+                  type: INT
+              - column:
+                  name: version
+                  type: INT
+                  defaultValueNumeric: 0
+                  constraints:
+                    nullable: false
+              - column:
+                  name: product_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: review_id
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: author
+                  type: VARCHAR(255)
+              - column:
+                  name: subject
+                  type: VARCHAR(255)
+              - column:
+                  name: content
+                  type: VARCHAR(200)
+              - column:
+                  name: rating
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: date
+                  type: DATE
+                  constraints:
+                    nullable: false
+            tableName: reviews
+        - addUniqueConstraint:
+            columnNames: product_id, review_id
+            constraintName: reviews_unique_idx
+            tableName: reviews
