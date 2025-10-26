@@ -1,5 +1,6 @@
 package shop.microservices.core.product.services;
 
+import jakarta.validation.Validator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,11 +23,17 @@ public class ProductServiceImpl implements ProductService {
 
     private final ProductMapper mapper;
 
+    private final Validator validator;
+
     @Autowired
-    public ProductServiceImpl(ProductRepository repository, ProductMapper mapper, ServiceUtil serviceUtil) {
+    public ProductServiceImpl(ProductRepository repository,
+                              ProductMapper mapper,
+                              ServiceUtil serviceUtil,
+                              Validator validator) {
         this.repository = repository;
         this.mapper = mapper;
         this.serviceUtil = serviceUtil;
+        this.validator = validator;
     }
 
     @Override
@@ -36,6 +43,15 @@ public class ProductServiceImpl implements ProductService {
         }
 
         ProductEntity entity = mapper.apiToEntity(body);
+
+        var constraints = validator.validate(entity);
+        if (!constraints.isEmpty()) {
+                String errorMessages = constraints.stream()
+                    .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
+                    .reduce((msg1, msg2) -> msg1 + "; " + msg2)
+                    .orElse("Validation failed");
+            throw new InvalidInputException(errorMessages);
+        }
 
         return repository.save(entity)
                 .onErrorMap(
