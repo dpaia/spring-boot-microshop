@@ -108,7 +108,6 @@ class ProductServiceApiTests extends PostgresTestBase {
         assertThrows(InvalidInputException.class, () -> messageProcessor.accept(event));
     }
 
-
     private WebTestClient.BodyContentSpec getAndVerifyProduct(int productId, HttpStatus expectedStatus) {
         return getAndVerifyProduct("/" + productId, expectedStatus);
     }
