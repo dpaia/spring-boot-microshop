@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
         "spring.flyway.enabled: false",
         "eureka.client.enabled=false"
 })
-public class ReviewServiceApplicationTests {
+public class ReviewServiceApplicationTests extends MySqlTestBase {
 
     @Autowired
     private Environment environment;

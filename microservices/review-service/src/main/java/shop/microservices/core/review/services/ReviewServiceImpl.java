@@ -44,7 +44,7 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     public Mono<Review> createReview(Review body) {
-        if (body.productId() < 1) {
+        if (body.productId() < 0) {
             throw new InvalidInputException("Invalid productId: " + body.productId());
         }
         return fromCallable(() -> internalCreateReview(body))
@@ -53,7 +53,7 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     public Flux<Review> getReviews(int productId) {
-        if (productId < 1) {
+        if (productId < 0) {
             throw new InvalidInputException("Invalid productId: " + productId);
         }
 
@@ -64,7 +64,7 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     public Mono<Void> deleteReviews(int productId) {
-        if (productId < 1) {
+        if (productId < 0) {
             throw new InvalidInputException("Invalid productId: " + productId);
         }
 

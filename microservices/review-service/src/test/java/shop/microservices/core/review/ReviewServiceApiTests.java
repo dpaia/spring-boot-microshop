@@ -17,6 +17,7 @@ import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
 import static org.springframework.http.HttpStatus.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
@@ -124,6 +125,207 @@ class ReviewServiceApiTests extends MySqlTestBase {
         getAndVerifyReviewsByProductId("?productId=" + productIdInvalid, UNPROCESSABLE_ENTITY)
                 .jsonPath("$.path").isEqualTo("/review")
                 .jsonPath("$.message").isEqualTo("Invalid productId: " + productIdInvalid);
+    }
+
+    @Test
+    void getReviewsWithProductIdZero() {
+        // Test that productId = 0 is now valid (should return OK, not UNPROCESSABLE_ENTITY)
+        getAndVerifyReviewsByProductId("?productId=0", OK)
+                .jsonPath("$.length()").isEqualTo(0);
+    }
+
+    @Test
+    void createReviewWithNegativeProductId() {
+        String invalidReviewJson = """
+                {
+                    "productId": -1,
+                    "reviewId": 1,
+                    "author": "Author",
+                    "subject": "Subject",
+                    "content": "%s",
+                    "serviceAddress": "SA"
+                }
+                """.formatted(REVIEW_CONTENT);
+
+        client.post()
+                .uri("/review")
+                .contentType(APPLICATION_JSON)
+                .bodyValue(invalidReviewJson)
+                .exchange()
+                .expectStatus().isBadRequest();
+    }
+
+    @Test
+    void createReviewWithNegativeReviewId() {
+        String invalidReviewJson = """
+                {
+                    "productId": 1,
+                    "reviewId": -1,
+                    "author": "Author",
+                    "subject": "Subject",
+                    "content": "%s",
+                    "serviceAddress": "SA"
+                }
+                """.formatted(REVIEW_CONTENT);
+
+        client.post()
+                .uri("/review")
+                .contentType(APPLICATION_JSON)
+                .bodyValue(invalidReviewJson)
+                .exchange()
+                .expectStatus().isBadRequest();
+    }
+
+    @Test
+    void createReviewWithBlankAuthor() {
+        String invalidReviewJson = """
+                {
+                    "productId": 1,
+                    "reviewId": 1,
+                    "author": "",
+                    "subject": "Subject",
+                    "content": "%s",
+                    "serviceAddress": "SA"
+                }
+                """.formatted(REVIEW_CONTENT);
+
+        client.post()
+                .uri("/review")
+                .contentType(APPLICATION_JSON)
+                .bodyValue(invalidReviewJson)
+                .exchange()
+                .expectStatus().isBadRequest();
+    }
+
+    @Test
+    void createReviewWithBlankSubject() {
+        String invalidReviewJson = """
+                {
+                    "productId": 1,
+                    "reviewId": 1,
+                    "author": "Author",
+                    "subject": "",
+                    "content": "%s",
+                    "serviceAddress": "SA"
+                }
+                """.formatted(REVIEW_CONTENT);
+
+        client.post()
+                .uri("/review")
+                .contentType(APPLICATION_JSON)
+                .bodyValue(invalidReviewJson)
+                .exchange()
+                .expectStatus().isBadRequest();
+    }
+
+    @Test
+    void createReviewWithShortContent() {
+        String invalidReviewJson = """
+                {
+                    "productId": 1,
+                    "reviewId": 1,
+                    "author": "Author",
+                    "subject": "Subject",
+                    "content": "Too short",
+                    "serviceAddress": "SA"
+                }
+                """;
+
+        client.post()
+                .uri("/review")
+                .contentType(APPLICATION_JSON)
+                .bodyValue(invalidReviewJson)
+                .exchange()
+                .expectStatus().isBadRequest();
+    }
+
+    @Test
+    void createReviewWithLongContent() {
+        String longContent = "a".repeat(201);
+        String invalidReviewJson = """
+                {
+                    "productId": 1,
+                    "reviewId": 1,
+                    "author": "Author",
+                    "subject": "Subject",
+                    "content": "%s",
+                    "serviceAddress": "SA"
+                }
+                """.formatted(longContent);
+
+        client.post()
+                .uri("/review")
+                .contentType(APPLICATION_JSON)
+                .bodyValue(invalidReviewJson)
+                .exchange()
+                .expectStatus().isBadRequest();
+    }
+
+    @Test
+    void createValidReview() {
+        String validReviewJson = """
+                {
+                    "productId": 1,
+                    "reviewId": 1,
+                    "author": "John Doe",
+                    "subject": "Great product",
+                    "content": "%s",
+                    "rating": 5,
+                    "date": "2023-10-25",
+                    "serviceAddress": "SA"
+                }
+                """.formatted(REVIEW_CONTENT);
+
+        client.post()
+                .uri("/review")
+                .contentType(APPLICATION_JSON)
+                .bodyValue(validReviewJson)
+                .exchange()
+                .expectStatus().isOk();
+    }
+
+    @Test
+    void createReviewWithInvalidRating() {
+        String invalidReviewJson = """
+                {
+                    "productId": 1,
+                    "reviewId": 1,
+                    "author": "Author",
+                    "subject": "Subject",
+                    "content": "%s",
+                    "rating": "R",
+                    "serviceAddress": "SA"
+                }
+                """.formatted(REVIEW_CONTENT);
+
+        client.post()
+                .uri("/review")
+                .contentType(APPLICATION_JSON)
+                .bodyValue(invalidReviewJson)
+                .exchange()
+                .expectStatus().isBadRequest();
+    }
+
+    @Test
+    void createReviewWithMultipleValidationErrors() {
+        String invalidReviewJson = """
+                {
+                    "productId": -1,
+                    "reviewId": -1,
+                    "author": "",
+                    "subject": "",
+                    "content": "short",
+                    "rating": 1,
+                    "serviceAddress": "SA"
+                }
+                """;
+
+        client.post()
+                .uri("/review")
+                .contentType(APPLICATION_JSON)
+                .bodyValue(invalidReviewJson)
+                .exchange()
+                .expectStatus().isBadRequest();
     }
 
     @SuppressWarnings("SameParameterValue")
