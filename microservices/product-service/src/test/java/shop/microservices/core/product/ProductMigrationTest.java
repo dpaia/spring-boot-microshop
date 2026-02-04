@@ -11,7 +11,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.JdbcDatabaseContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 
-@SpringBootTest
+@SpringBootTest(properties = {"spring.sql.init.mode=never"})
 public class ProductMigrationTest {
 
     private static final JdbcDatabaseContainer<?> database =
