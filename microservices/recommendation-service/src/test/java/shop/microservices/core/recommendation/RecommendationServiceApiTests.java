@@ -1,14 +1,12 @@
 package shop.microservices.core.recommendation;
 
-import com.google.gson.Gson;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
-import org.springframework.test.json.AbstractJsonContentAssert;
-import org.springframework.test.web.servlet.assertj.MockMvcTester;
+import org.springframework.test.web.reactive.server.WebTestClient;
 import shop.api.core.recommendation.Recommendation;
 import shop.microservices.core.recommendation.persistence.RecommendationRepository;
 
@@ -16,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
 import static org.springframework.http.HttpStatus.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static reactor.core.publisher.Mono.just;
 
 @AutoConfigureMockMvc
 @SpringBootTest(webEnvironment = RANDOM_PORT)
@@ -24,14 +23,14 @@ public class RecommendationServiceApiTests extends MongoDbTestBase {
     private static final String RECOMMENDATION_CONTENT = "Lorem ipsum dolor sit amet, consetetur sadipscingw";
 
     @Autowired
-    private MockMvcTester mockMvcTester;
+    private WebTestClient client;
 
     @Autowired
     private RecommendationRepository repository;
 
     @BeforeEach
     void setupDb() {
-        repository.deleteAll();
+        repository.deleteAll().block();
     }
 
     @Test
@@ -42,12 +41,13 @@ public class RecommendationServiceApiTests extends MongoDbTestBase {
         postAndVerifyRecommendation(productId, 2, OK);
         postAndVerifyRecommendation(productId, 3, OK);
 
-        assertEquals(3, repository.findByProductId(productId).size());
+        //noinspection DataFlowIssue
+        assertEquals(3, repository.findByProductId(productId).collectList().block().size());
 
         getAndVerifyRecommendationsByProductId(productId, OK)
-                .hasPathSatisfying("$.length()", it -> it.assertThat().isEqualTo(3))
-                .hasPathSatisfying("$[2].productId", it -> it.assertThat().isEqualTo(productId))
-                .hasPathSatisfying("$[2].recommendationId", it -> it.assertThat().isEqualTo(3));
+                .jsonPath("$.length()").isEqualTo(3)
+                .jsonPath("$[2].productId").isEqualTo(productId)
+                .jsonPath("$[2].recommendationId").isEqualTo(3);
     }
 
     @Test
@@ -56,16 +56,16 @@ public class RecommendationServiceApiTests extends MongoDbTestBase {
         int recommendationId = 1;
 
         postAndVerifyRecommendation(productId, recommendationId, OK)
-                .hasPathSatisfying("$.productId", it -> it.assertThat().isEqualTo(productId))
-                .hasPathSatisfying("$.recommendationId", it -> it.assertThat().isEqualTo(recommendationId));
+                .jsonPath("$.productId").isEqualTo(productId)
+                .jsonPath("$.recommendationId").isEqualTo(recommendationId);
 
-        assertEquals(1, repository.count());
+        assertEquals(1, repository.count().block());
 
         postAndVerifyRecommendation(productId, recommendationId, UNPROCESSABLE_ENTITY)
-                .hasPathSatisfying("$.path", it -> it.assertThat().isEqualTo("/recommendation"))
-                .hasPathSatisfying("$.message", it -> it.assertThat().isEqualTo("Duplicate key, Product Id: 1, Recommendation Id:1"));
+                .jsonPath("$.path").isEqualTo("/recommendation")
+                .jsonPath("$.message").isEqualTo("Duplicate key, Product Id: 1, Recommendation Id:1");
 
-        assertEquals(1, repository.count());
+        assertEquals(1, repository.count().block());
     }
 
     @Test
@@ -74,10 +74,12 @@ public class RecommendationServiceApiTests extends MongoDbTestBase {
         int recommendationId = 1;
 
         postAndVerifyRecommendation(productId, recommendationId, OK);
-        assertEquals(1, repository.findByProductId(productId).size());
+        //noinspection DataFlowIssue
+        assertEquals(1, repository.findByProductId(productId).collectList().block().size());
 
         deleteAndVerifyRecommendationsByProductId(productId, OK);
-        assertEquals(0, repository.findByProductId(productId).size());
+        //noinspection DataFlowIssue
+        assertEquals(0, repository.findByProductId(productId).collectList().block().size());
 
         deleteAndVerifyRecommendationsByProductId(productId, OK);
     }
@@ -95,7 +97,7 @@ public class RecommendationServiceApiTests extends MongoDbTestBase {
     @Test
     void getRecommendationsNotFound() {
         getAndVerifyRecommendationsByProductId("?productId=113", OK)
-                .hasPathSatisfying("$.length()", it -> it.assertThat().isEqualTo(0));
+                .jsonPath("$.length()").isEqualTo(0);
     }
 
     @Test
@@ -103,42 +105,44 @@ public class RecommendationServiceApiTests extends MongoDbTestBase {
         int productIdInvalid = -1;
 
         getAndVerifyRecommendationsByProductId("?productId=" + productIdInvalid, UNPROCESSABLE_ENTITY)
-                .hasPathSatisfying("$.path", it -> it.assertThat().isEqualTo("/recommendation"))
-                .hasPathSatisfying("$.message", it -> it.assertThat().isEqualTo("Invalid productId: " + productIdInvalid));
+                .jsonPath("$.path").isEqualTo("/recommendation")
+                .jsonPath("$.message").isEqualTo("Invalid productId: " + productIdInvalid);
     }
 
-    private AbstractJsonContentAssert<?> getAndVerifyRecommendationsByProductId(int productId, HttpStatus expectedStatus) {
+    @SuppressWarnings("SameParameterValue")
+    private WebTestClient.BodyContentSpec getAndVerifyRecommendationsByProductId(int productId, HttpStatus expectedStatus) {
         return getAndVerifyRecommendationsByProductId("?productId=" + productId, expectedStatus);
     }
 
-    private AbstractJsonContentAssert<?> getAndVerifyRecommendationsByProductId(String productIdQuery, HttpStatus expectedStatus) {
-        return mockMvcTester.get()
+    private WebTestClient.BodyContentSpec getAndVerifyRecommendationsByProductId(String productIdQuery, HttpStatus expectedStatus) {
+        return client.get()
                 .uri("/recommendation" + productIdQuery)
-                .contentType(APPLICATION_JSON)
+                .accept(APPLICATION_JSON)
                 .exchange()
-                .assertThat()
-                .hasStatus(expectedStatus)
-                .bodyJson();
+                .expectStatus().isEqualTo(expectedStatus)
+                .expectHeader().contentType(APPLICATION_JSON)
+                .expectBody();
     }
 
-    private AbstractJsonContentAssert<?> postAndVerifyRecommendation(int productId, int recommendationId, HttpStatus expectedStatus) {
+    private WebTestClient.BodyContentSpec postAndVerifyRecommendation(int productId, int recommendationId, HttpStatus expectedStatus) {
         Recommendation recommendation = new Recommendation(productId, recommendationId, "Author " + recommendationId, recommendationId, RECOMMENDATION_CONTENT + recommendationId, "SA");
-        return mockMvcTester.post()
+        return client.post()
                 .uri("/recommendation")
-                .contentType(APPLICATION_JSON)
-                .content(new Gson().toJson(recommendation))
+                .body(just(recommendation), Recommendation.class)
+                .accept(APPLICATION_JSON)
                 .exchange()
-                .assertThat()
-                .hasStatus(expectedStatus)
-                .bodyJson();
+                .expectStatus().isEqualTo(expectedStatus)
+                .expectHeader().contentType(APPLICATION_JSON)
+                .expectBody();
     }
 
+    @SuppressWarnings("SameParameterValue")
     private void deleteAndVerifyRecommendationsByProductId(int productId, HttpStatus expectedStatus) {
-        mockMvcTester.delete()
+        client.delete()
                 .uri("/recommendation?productId=" + productId)
-                .contentType(APPLICATION_JSON)
+                .accept(APPLICATION_JSON)
                 .exchange()
-                .assertThat()
-                .hasStatus(expectedStatus);
+                .expectStatus().isEqualTo(expectedStatus)
+                .expectBody();
     }
 }

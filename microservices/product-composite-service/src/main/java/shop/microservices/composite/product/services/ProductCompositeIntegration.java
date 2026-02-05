@@ -3,11 +3,12 @@ package shop.microservices.composite.product.services;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import shop.api.core.product.Product;
 import shop.api.core.product.ProductService;
 import shop.api.core.recommendation.Recommendation;
@@ -18,15 +19,11 @@ import shop.api.exceptions.InvalidInputException;
 import shop.util.http.HttpErrorInfo;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.springframework.http.HttpMethod.GET;
 
 @Component
 public class ProductCompositeIntegration implements ProductService, RecommendationService, ReviewService {
 
-    private final RestTemplate restTemplate;
+    private final WebClient webClient;
     private final ObjectMapper mapper;
 
     private final String productServiceUrl;
@@ -36,16 +33,16 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
     @SuppressWarnings("HttpUrlsUsage")
     @Autowired
     public ProductCompositeIntegration(
-            RestTemplate restTemplate,
             ObjectMapper mapper,
             @Value("${app.product-service.host}") String productServiceHost,
             @Value("${app.product-service.port}") int productServicePort,
             @Value("${app.recommendation-service.host}") String recommendationServiceHost,
             @Value("${app.recommendation-service.port}") int recommendationServicePort,
             @Value("${app.review-service.host}") String reviewServiceHost,
-            @Value("${app.review-service.port}") int reviewServicePort) {
+            @Value("${app.review-service.port}") int reviewServicePort,
+            WebClient webClient) {
 
-        this.restTemplate = restTemplate;
+        this.webClient = webClient;
         this.mapper = mapper;
 
         productServiceUrl = "http://" + productServiceHost + ":" + productServicePort + "/product";
@@ -54,117 +51,137 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
     }
 
     @Override
-    public Product createProduct(Product body) {
-        try {
-            return restTemplate.postForObject(productServiceUrl, body, Product.class);
-        } catch (HttpClientErrorException ex) {
-            throw handleHttpClientException(ex);
-        }
+    public Mono<Product> createProduct(Product body) {
+        String url = productServiceUrl;
+
+        return webClient
+                .post()
+                .uri(url)
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(Product.class)
+                .onErrorMap(WebClientResponseException.class, this::handleException);
     }
 
     @Override
-    public Product getProduct(int productId) {
-        try {
-            String url = productServiceUrl + "/" + productId;
+    public Mono<Product> getProduct(int productId) {
+        String url = productServiceUrl + "/" + productId;
 
-            return restTemplate.getForObject(url, Product.class);
-        } catch (HttpClientErrorException ex) {
-            throw handleHttpClientException(ex);
-        }
+        return webClient
+                .get()
+                .uri(url)
+                .retrieve()
+                .bodyToMono(Product.class)
+                .onErrorMap(WebClientResponseException.class, this::handleException);
     }
 
     @Override
-    public void deleteProduct(int productId) {
-        try {
-            String url = productServiceUrl + "/" + productId;
+    public Mono<Void> deleteProduct(int productId) {
+        String url = productServiceUrl + "/" + productId;
 
-            restTemplate.delete(url);
-
-        } catch (HttpClientErrorException ex) {
-            throw handleHttpClientException(ex);
-        }
+        return webClient
+                .delete()
+                .uri(url)
+                .retrieve()
+                .bodyToMono(Void.class)
+                .onErrorMap(WebClientResponseException.class, this::handleException);
     }
 
     @Override
-    public Recommendation createRecommendation(Recommendation body) {
-        try {
-            return restTemplate.postForObject(recommendationServiceUrl, body, Recommendation.class);
-        } catch (HttpClientErrorException ex) {
-            throw handleHttpClientException(ex);
-        }
+    public Mono<Recommendation> createRecommendation(Recommendation body) {
+        String url = recommendationServiceUrl;
+
+        return webClient
+                .post()
+                .uri(url)
+                .retrieve()
+                .bodyToMono(Recommendation.class)
+                .onErrorMap(WebClientResponseException.class, this::handleException);
     }
 
     @Override
-    public List<Recommendation> getRecommendations(int productId) {
+    public Flux<Recommendation> getRecommendations(int productId) {
         try {
             String url = recommendationServiceUrl + "?productId=" + productId;
 
-            return restTemplate
-                    .exchange(url, GET, null, new ParameterizedTypeReference<List<Recommendation>>() {
-                    })
-                    .getBody();
-
+            return webClient
+                    .get()
+                    .uri(url)
+                    .retrieve()
+                    .bodyToFlux(Recommendation.class);
         } catch (Exception ex) {
-            return new ArrayList<>();
+            return Flux.empty();
         }
     }
 
     @Override
-    public void deleteRecommendations(int productId) {
-        try {
-            String url = recommendationServiceUrl + "?productId=" + productId;
-            restTemplate.delete(url);
-        } catch (HttpClientErrorException ex) {
-            throw handleHttpClientException(ex);
-        }
+    public Mono<Void> deleteRecommendations(int productId) {
+        String url = recommendationServiceUrl + "?productId=" + productId;
+
+        return webClient
+                .delete()
+                .uri(url)
+                .retrieve()
+                .bodyToMono(Void.class)
+                .onErrorMap(WebClientResponseException.class, this::handleException);
     }
 
     @Override
-    public Review createReview(Review body) {
-        try {
-            return restTemplate.postForObject(reviewServiceUrl, body, Review.class);
-        } catch (HttpClientErrorException ex) {
-            throw handleHttpClientException(ex);
-        }
+    public Mono<Review> createReview(Review body) {
+        String url = reviewServiceUrl;
+
+        return webClient
+                .post()
+                .uri(url)
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(Review.class)
+                .onErrorMap(WebClientResponseException.class, this::handleException);
     }
 
     @Override
-    public List<Review> getReviews(int productId) {
+    public Flux<Review> getReviews(int productId) {
         try {
             String url = reviewServiceUrl + "?productId=" + productId;
 
-            return restTemplate
-                    .exchange(url, GET, null, new ParameterizedTypeReference<List<Review>>() {
-                    })
-                    .getBody();
+            return webClient
+                    .get()
+                    .uri(url)
+                    .retrieve()
+                    .bodyToFlux(Review.class);
 
         } catch (Exception ex) {
-            return new ArrayList<>();
+            return Flux.empty();
         }
     }
 
     @Override
-    public void deleteReviews(int productId) {
-        try {
-            String url = reviewServiceUrl + "?productId=" + productId;
+    public Mono<Void> deleteReviews(int productId) {
+        String url = reviewServiceUrl + "?productId=" + productId;
 
-            restTemplate.delete(url);
-        } catch (HttpClientErrorException ex) {
-            throw handleHttpClientException(ex);
-        }
+        return webClient
+                .delete()
+                .uri(url)
+                .retrieve()
+                .bodyToMono(Void.class)
+                .onErrorMap(WebClientResponseException.class, this::handleException);
     }
 
-    private RuntimeException handleHttpClientException(HttpClientErrorException ex) {
-        return switch (HttpStatus.resolve(ex.getStatusCode().value())) {
-            case NOT_FOUND, UNPROCESSABLE_ENTITY -> new InvalidInputException(getErrorMessage(ex));
+    private Throwable handleException(Throwable ex) {
+        if (!(ex instanceof WebClientResponseException wcre)) {
+            return ex;
+        }
+
+        return switch (HttpStatus.resolve(wcre.getStatusCode().value())) {
+            case NOT_FOUND, UNPROCESSABLE_ENTITY -> new InvalidInputException(getErrorMessage(wcre));
             case null, default -> ex;
         };
     }
 
-    private String getErrorMessage(HttpClientErrorException ex) {
+    private String getErrorMessage(WebClientResponseException ex) {
         try {
             return mapper.readValue(ex.getResponseBodyAsString(), HttpErrorInfo.class).getMessage();
-        } catch (IOException ignored) {
+        } catch (IOException _) {
             return ex.getMessage();
         }
     }
