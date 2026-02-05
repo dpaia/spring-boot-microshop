@@ -15,6 +15,10 @@ jar {
     enabled = false
 }
 
+ext {
+    springCloudVersion = "2025.0.0"
+}
+
 repositories {
     mavenCentral()
 }
@@ -23,10 +27,20 @@ dependencies {
     implementation project(':api')
     implementation project(':util')
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'org.springframework.cloud:spring-cloud-starter-stream-rabbit'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
     implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:2.8.9'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'com.google.code.gson:gson:2.13.1'
+    testImplementation 'org.springframework.cloud:spring-cloud-stream-test-binder'
+    testImplementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
 }
 
 tasks.withType(Test).configureEach {
