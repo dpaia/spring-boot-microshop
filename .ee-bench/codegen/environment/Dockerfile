@@ -1,7 +1,7 @@
-FROM eclipse-temurin:24-jdk-jammy
+FROM eclipse-temurin:24-jdk
 
 # Install git and Docker CLI (required for Testcontainers)
-RUN apt-get update && apt-get install -y git ca-certificates curl gnupg && \
+RUN apt-get update && apt-get install -y git python3 ca-certificates curl gnupg && \
     install -m 0755 -d /etc/apt/keyrings && \
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
       | gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
