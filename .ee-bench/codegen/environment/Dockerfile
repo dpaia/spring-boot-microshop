@@ -14,16 +14,11 @@ RUN apt-get update && apt-get install -y git python3 ca-certificates curl gnupg 
 
 ARG REPO_URL={{ instance.repo_url }}
 ARG BASE_COMMIT={{ instance.base_commit }}
-ARG BASE_BRANCH={{ instance.base_ref }}
 
 WORKDIR /repo
 RUN git clone "${REPO_URL}" . && git checkout "${BASE_COMMIT}"
 
-# Fetch gradle-wrapper.jar from the base branch (not committed at merge base).
-RUN git fetch origin "${BASE_BRANCH}" && \
-    git checkout "origin/${BASE_BRANCH}" -- gradle/wrapper/gradle-wrapper.jar 2>/dev/null || true
-
 # Pre-download all Gradle dependencies to speed up eval runs
-RUN ./gradlew dependencies --no-daemon -q 2>/dev/null || true
+RUN ./gradlew dependencies --no-daemon -q 2>/dev/null
 
 LABEL ee-bench.type="codegen"
