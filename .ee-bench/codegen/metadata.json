@@ -3,7 +3,7 @@
   "benchmark_type": "codegen",
   "environment": {
     "project_root": "/repo",
-    "docker_run_params": "-v /var/run/docker.sock:/var/run/docker.sock:rw"
+    "docker_run_params": "--privileged --network bridge -v /var/run/docker.sock:/var/run/docker.sock -e TESTCONTAINERS_RYUK_DISABLED=true -e TESTCONTAINERS_CHECKS_DISABLE=true -e DOCKER_HOST=unix:///var/run/docker.sock"
   },
   "evaluation": {
     "build_system": "gradle",
