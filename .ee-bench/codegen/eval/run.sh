@@ -9,7 +9,7 @@ TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
 cd "${PROJECT_ROOT}"
 git reset --hard HEAD
-git clean -fdx
+git clean -fd
 
 # ── Patch applied criterion ──────────────────────────────────────────────
 PATCH_STATUS="fail"
