@@ -1,0 +1,23 @@
+{
+  "instance_id": "dpaia__spring__boot__microshop-1",
+  "base_commit": "333b67e242e05606fae4c2e6c03ef98a358263d5",
+  "expected": {
+    "fail_to_pass": [
+      "shop.microservices.composite.product.ProductCompositeApiTests",
+      "shop.microservices.core.product.ProductServiceApiTests",
+      "shop.microservices.core.recommendation.RecommendationServiceApiTests",
+      "shop.microservices.core.review.ReviewServiceApiTests"
+    ],
+    "pass_to_pass": []
+  },
+  "issue_numbers": [
+    "1"
+  ],
+  "tags": [
+    "API",
+    "Controller",
+    "DTO",
+    "Endpoints",
+    "REST"
+  ]
+}
