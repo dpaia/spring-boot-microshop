@@ -1,24 +1,24 @@
-FROM eclipse-temurin:24-jdk
+FROM eclipse-temurin:24
 
-# Install git and Docker CLI (required for Testcontainers)
-RUN apt-get update && apt-get install -y git python3 ca-certificates curl gnupg && \
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get install -y build-essential git curl wget python3 python3-pip ca-certificates gnupg && \
     install -m 0755 -d /etc/apt/keyrings && \
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg \
-      | gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
     chmod a+r /etc/apt/keyrings/docker.gpg && \
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
-      https://download.docker.com/linux/ubuntu jammy stable" \
-      > /etc/apt/sources.list.d/docker.list && \
-    apt-get update && apt-get install -y docker-ce-cli && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" > /etc/apt/sources.list.d/docker.list && \
+    apt-get update && \
+    apt-get install -y docker-ce-cli && \
     rm -rf /var/lib/apt/lists/*
 
-ARG REPO_URL={{ instance.repo_url }}
-ARG BASE_COMMIT={{ instance.base_commit }}
-
+RUN git clone https://github.com/jetbrains-eval-lab/spring-boot-microshop.git /repo
 WORKDIR /repo
-RUN git clone "${REPO_URL}" . && git checkout "${BASE_COMMIT}"
+RUN git checkout {{ instance.base_commit }}
 
-# Pre-download all Gradle dependencies to speed up eval runs
-RUN ./gradlew dependencies --no-daemon -q 2>/dev/null
+RUN chmod +x ./gradlew && \
+    ./gradlew dependencies --no-daemon -q
 
 LABEL ee-bench.type="codegen"
+LABEL ee-bench.version="1.0"
+RUN rm -rf /repo/.ee-bench/ 2>/dev/null || true

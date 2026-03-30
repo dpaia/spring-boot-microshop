@@ -2,149 +2,134 @@
 set -euo pipefail
 
 PROJECT_ROOT="${EE_BENCH_PROJECT_ROOT:-/repo}"
-PATCH_FILE="${EE_BENCH_SUBMISSION_PATCH:-/ee-bench/submission/patch.diff}"
-TEST_PATCH_FILE="${EE_BENCH_TEST_PATCH:-/ee-bench/eval/test_patch.diff}"
+EVAL_DIR="/ee-bench/eval"
+SUBMISSION_DIR="/ee-bench/submission"
+export ARTIFACTS_DIR="/tmp/test-results"
+mkdir -p "$ARTIFACTS_DIR"
 
-TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-RUN_START=$(date +%s.%N 2>/dev/null || python3 -c "import time; print(f'{time.time():.3f}')")
+TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+OVERALL_START=$SECONDS
 
-cd "${PROJECT_ROOT}"
-git reset --hard HEAD
-git clean -fd --exclude=gradle/wrapper/gradle-wrapper.jar
+_elapsed() { echo $(( SECONDS - ${1:-$OVERALL_START} )); }
 
-_elapsed() {
-  local start="$1"
-  local now
-  now=$(date +%s.%N 2>/dev/null || python3 -c "import time; print(f'{time.time():.3f}')")
-  python3 -c "print(round(${now} - ${start}, 3))"
+# --- _run_tests: run tests with isolated ARTIFACTS_DIR ---
+# Usage: _run_tests <label>
+# Writes: /tmp/<label>_stdout.log, /tmp/<label>_stderr.log, /tmp/<label>_parser.json
+_run_tests() {
+  local label="$1"
+  local orig_artifacts="$ARTIFACTS_DIR"
+  export ARTIFACTS_DIR="$orig_artifacts/$label"
+  mkdir -p "$ARTIFACTS_DIR"
+
+  set +e
+  ./gradlew test --no-daemon --continue > "/tmp/${label}_stdout.log" 2> "/tmp/${label}_stderr.log"
+  set -e
+
+  # Copy test reports to ARTIFACTS_DIR for parser (use find for multi-module support)
+  find "$PROJECT_ROOT" -path "*/build/test-results/test/*.xml" -exec cp {} "$ARTIFACTS_DIR/" \; 2>/dev/null || true
+
+  python3 "$EVAL_DIR/scripts/ee_bench_parser_junit.py" "$ARTIFACTS_DIR" > "/tmp/${label}_parser.json" 2>/dev/null || echo '{}' > "/tmp/${label}_parser.json"
+
+  export ARTIFACTS_DIR="$orig_artifacts"
 }
 
-# ── Patch applied criterion ──────────────────────────────────────────────
-PATCH_START=$(date +%s.%N 2>/dev/null || python3 -c "import time; print(f'{time.time():.3f}')")
-PATCH_STATUS="fail"
+cd "$PROJECT_ROOT"
+
+# --- Reset to base commit (only if EE_BENCH_RESET is set) ---
+if [ -n "${EE_BENCH_RESET:-}" ]; then
+  git reset --hard "{{ instance.base_commit }}" 2>/dev/null
+  git clean -fdx 2>/dev/null
+fi
+
+# ============================================================
+# Criterion: compilation (clean base, before test_patch)
+# ============================================================
+COMPILE_START=$SECONDS
+COMPILE_STATUS="pass"
+./gradlew classes testClasses --no-daemon -q > /tmp/compile_stdout.log 2> /tmp/compile_stderr.log || {
+  COMPILE_STATUS="fail"
+}
+COMPILE_DURATION=$(_elapsed $COMPILE_START)
+
+# ============================================================
+# Run baseline tests (clean base, before test_patch)
+# Establishes pass_to_pass baseline and fail_to_pass baseline.
+# ============================================================
+HAS_TEST_PATCH="false"
+if [ -f "$EVAL_DIR/test_patch.diff" ]; then
+  HAS_TEST_PATCH="true"
+fi
+
+BASELINE_DURATION=0
+if [ "$COMPILE_STATUS" = "pass" ]; then
+  BASELINE_START=$SECONDS
+  _run_tests baseline
+  BASELINE_DURATION=$(_elapsed $BASELINE_START)
+fi
+
+# ============================================================
+# Apply test patch (after baseline, before gold patch)
+# ============================================================
+if [ "$HAS_TEST_PATCH" = "true" ]; then
+  git apply -v "$EVAL_DIR/test_patch.diff" 2>/dev/null || true
+fi
+
+# ============================================================
+# Criterion: patch_applied (submission patch)
+# ============================================================
+PATCH_START=$SECONDS
+PATCH_STATUS="pass"
 PATCH_OUTPUT=""
-if [ -f "${PATCH_FILE}" ] && [ -s "${PATCH_FILE}" ]; then
-  PATCH_OUTPUT=$(git apply --ignore-whitespace "${PATCH_FILE}" 2>&1) && PATCH_STATUS="pass" || true
+if [ -f "$SUBMISSION_DIR/patch.diff" ]; then
+  PATCH_OUTPUT=$(git apply -v "$SUBMISSION_DIR/patch.diff" 2>&1) || {
+    PATCH_STATUS="fail"
+    echo "WARN: git apply failed for submission patch" >&2
+  }
+else
+  PATCH_STATUS="skipped"
 fi
-PATCH_DURATION=$(_elapsed "${PATCH_START}")
+PATCH_DURATION=$(_elapsed $PATCH_START)
 
-# Apply test patch (informational only — not counted in patch_applied)
-if [ -f "${TEST_PATCH_FILE}" ] && [ -s "${TEST_PATCH_FILE}" ]; then
-  git apply --ignore-whitespace "${TEST_PATCH_FILE}" 2>/dev/null || true
+# ============================================================
+# Rebuild after submission patch
+# ============================================================
+REBUILD_STATUS="skipped"
+if [ "$PATCH_STATUS" = "pass" ]; then
+  ./gradlew classes testClasses --no-daemon -q > /tmp/rebuild_stdout.log 2> /tmp/rebuild_stderr.log || {
+    REBUILD_STATUS="fail"
+  }
+  if [ "$REBUILD_STATUS" != "fail" ]; then
+    REBUILD_STATUS="pass"
+    COMPILE_STATUS="pass"
+  fi
 fi
 
-# ── Compilation criterion ────────────────────────────────────────────────
-COMPILE_START=$(date +%s.%N 2>/dev/null || python3 -c "import time; print(f'{time.time():.3f}')")
-COMPILE_STATUS="fail"
-COMPILE_OUTPUT=""
-COMPILE_OUTPUT=$(./gradlew compileJava compileTestJava --no-daemon 2>&1) && COMPILE_STATUS="pass" || true
-COMPILE_DURATION=$(_elapsed "${COMPILE_START}")
+# ============================================================
+# Run eval tests (only if rebuild/compilation OK and patch not failed)
+# ============================================================
+TEST_DURATION=0
+if [ "$REBUILD_STATUS" = "pass" ] || ([ "$COMPILE_STATUS" = "pass" ] && [ "$PATCH_STATUS" != "fail" ]); then
+  TEST_START=$SECONDS
+  _run_tests eval
+  TEST_DURATION=$(_elapsed $TEST_START)
+fi
 
-# ── Test criterion ───────────────────────────────────────────────────────
-TEST_START=$(date +%s.%N 2>/dev/null || python3 -c "import time; print(f'{time.time():.3f}')")
-TEST_STATUS="fail"
-TEST_OUTPUT=""
-TEST_OUTPUT=$(bash /ee-bench/eval/scripts/run_script.sh 2>&1) || true
+OVERALL_DURATION=$(_elapsed $OVERALL_START)
 
-# Parse results with parser.py
-RESULTS_JSON=$(python3 /ee-bench/eval/scripts/parser.py "${PROJECT_ROOT}" 2>/dev/null || echo '{}')
-TEST_DURATION=$(_elapsed "${TEST_START}")
+# --- Write temp files for safe passing to Python emitter ---
+echo "$PATCH_OUTPUT" > /tmp/_patch_output.txt
+cat /tmp/compile_stdout.log /tmp/compile_stderr.log > /tmp/_compile_output.txt 2>/dev/null || true
 
-TOTAL_DURATION=$(_elapsed "${RUN_START}")
+# --- Write expected test lists to file (avoids shell quoting issues) ---
+cat > /tmp/_expected.json << 'EXPECTED_EOF'
+{"fail_to_pass": {{ instance.expected.fail_to_pass | tojson }}, "pass_to_pass": {{ instance.expected.pass_to_pass | tojson }}}
+EXPECTED_EOF
 
-# Determine test pass/fail from parser output
-FAILED=$(echo "${RESULTS_JSON}" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('failed',0))" 2>/dev/null || echo 0)
-TOTAL=$(echo "${RESULTS_JSON}" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('total',0))" 2>/dev/null || echo 0)
-[ "${FAILED}" -eq 0 ] && [ "${TOTAL}" -gt 0 ] && TEST_STATUS="pass" || true
+# ============================================================
+# Emit EE-bench JSON v2.0 (6 criteria)
+# ============================================================
+export PATCH_STATUS PATCH_DURATION COMPILE_STATUS COMPILE_DURATION
+export TEST_DURATION BASELINE_DURATION OVERALL_DURATION TIMESTAMP
+export HAS_TEST_PATCH
 
-# ── Write temp files for safe passing to Python emitter ─────────────────
-printf '%s' "${PATCH_OUTPUT}" > /tmp/ee_bench_patch_output.txt
-printf '%s' "${COMPILE_OUTPUT}" > /tmp/ee_bench_compile_output.txt
-printf '%s' "${TEST_OUTPUT}" > /tmp/ee_bench_test_output.txt
-printf '%s' "${RESULTS_JSON}" > /tmp/ee_bench_parser_results.json
-
-# ── Emit result JSON ─────────────────────────────────────────────────────
-EE_TIMESTAMP="${TIMESTAMP}" \
-EE_TOTAL_DURATION="${TOTAL_DURATION}" \
-EE_PATCH_STATUS="${PATCH_STATUS}" \
-EE_PATCH_DURATION="${PATCH_DURATION}" \
-EE_COMPILE_STATUS="${COMPILE_STATUS}" \
-EE_COMPILE_DURATION="${COMPILE_DURATION}" \
-EE_TEST_STATUS="${TEST_STATUS}" \
-EE_TEST_DURATION="${TEST_DURATION}" \
-python3 - <<'PYEOF'
-import json, os, sys
-
-MAX_OUTPUT = 50_000
-
-
-def trunc(s, limit=MAX_OUTPUT):
-    if not s or len(s) <= limit:
-        return s or ""
-    return s[:limit] + "\n... truncated ..."
-
-
-def read_file(path):
-    try:
-        with open(path) as f:
-            return f.read()
-    except OSError:
-        return ""
-
-
-def read_json(path):
-    try:
-        with open(path) as f:
-            return json.load(f)
-    except (OSError, json.JSONDecodeError):
-        return {}
-
-
-patch_output = read_file("/tmp/ee_bench_patch_output.txt")
-compile_output = read_file("/tmp/ee_bench_compile_output.txt")
-test_output = read_file("/tmp/ee_bench_test_output.txt")
-parser = read_json("/tmp/ee_bench_parser_results.json")
-
-summary = parser.get("summary", {
-    "total": parser.get("total", 0),
-    "passed": parser.get("passed", 0),
-    "failed": parser.get("failed", 0),
-    "errors": 0,
-    "skipped": 0,
-})
-
-result = {
-    "schema_version": "2.0",
-    "command": "run",
-    "status": "success",
-    "timestamp": os.environ["EE_TIMESTAMP"],
-    "duration_seconds": float(os.environ["EE_TOTAL_DURATION"]),
-    "criteria": [
-        {
-            "criterion": "patch_applied",
-            "status": os.environ["EE_PATCH_STATUS"],
-            "duration_seconds": float(os.environ["EE_PATCH_DURATION"]),
-            "output": trunc(patch_output),
-        },
-        {
-            "criterion": "compilation",
-            "status": os.environ["EE_COMPILE_STATUS"],
-            "duration_seconds": float(os.environ["EE_COMPILE_DURATION"]),
-            "output": trunc(compile_output),
-        },
-        {
-            "criterion": "tests",
-            "status": os.environ["EE_TEST_STATUS"],
-            "duration_seconds": float(os.environ["EE_TEST_DURATION"]),
-            "summary": summary,
-            "passed_tests": parser.get("passed_tests", []),
-            "failed_tests": parser.get("failed_tests", []),
-            "skipped_tests": parser.get("skipped_tests", []),
-            "methods": parser.get("methods", []),
-            "output": trunc(test_output),
-        },
-    ],
-}
-
-print(json.dumps(result))
-PYEOF
+python3 "$EVAL_DIR/scripts/ee_bench_eval.py"
