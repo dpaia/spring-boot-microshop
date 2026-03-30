@@ -3,6 +3,7 @@
   "benchmark_type": "codegen",
   "language": "java",
   "jvm_version": "24",
+  "build_system": "gradle",
   "expected": {
     "fail_to_pass": [],
     "pass_to_pass": []
