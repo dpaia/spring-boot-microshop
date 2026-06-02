@@ -5,7 +5,9 @@
   "jvm_version": "24",
   "build_system": "gradle",
   "expected": {
-    "fail_to_pass": [],
+    "fail_to_pass": [
+      "microservices:product-composite-service:shop.microservices.composite.product.ProductCompositeApiTests#getReviewsByProductId"
+    ],
     "pass_to_pass": []
   },
   "environment": {

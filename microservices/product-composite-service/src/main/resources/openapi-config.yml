@@ -27,6 +27,12 @@ api:
     unprocessableEntity.description: Unprocessable entity, input parameters caused the processing to fail. See response message for more information
 
   product-composite:
+    get-reviews:
+      description: Returns reviews for a specified product id
+      notes: |
+        # Normal response
+        If the requested product id is found the method will return information regarding:
+         1. Reviews
     get-composite-product:
       description: Returns a composite view of the specified product id
       notes: |
