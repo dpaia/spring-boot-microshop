@@ -24,6 +24,7 @@ import shop.api.core.review.Review;
 import shop.api.core.review.ReviewService;
 import shop.api.event.Event;
 import shop.api.exceptions.InvalidInputException;
+import shop.api.exceptions.NotFoundException;
 import shop.util.http.HttpErrorInfo;
 
 import java.io.IOException;
@@ -182,6 +183,7 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
 
         switch (HttpStatus.resolve(responseException.getStatusCode().value())) {
             case NOT_FOUND:
+                return new NotFoundException(getErrorMessage(responseException));
             case UNPROCESSABLE_ENTITY:
                 return new InvalidInputException(getErrorMessage(responseException));
             case null:
