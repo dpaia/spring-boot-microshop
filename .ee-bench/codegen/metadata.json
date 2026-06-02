@@ -5,7 +5,12 @@
   "jvm_version": "24",
   "build_system": "gradle",
   "expected": {
-    "fail_to_pass": [],
+    "fail_to_pass": [
+      "microservices:product-composite-service:shop.microservices.composite.product.ProductCompositeApiTests.testUnprocessableEntityForNegativeParameter",
+      "microservices:product-service:shop.microservices.core.product.ProductServiceApiTests.testUnprocessableEntityForNegativeParameter",
+      "microservices:recommendation-service:shop.microservices.core.recommendation.RecommendationServiceApiTests.testUnprocessableEntityForNegativeParameter",
+      "microservices:review-service:shop.microservices.core.review.ReviewServiceApiTests.testUnprocessableEntityForNegativeParameter"
+    ],
     "pass_to_pass": []
   },
   "environment": {
