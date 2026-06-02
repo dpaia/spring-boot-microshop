@@ -10,11 +10,50 @@ spring.datasource.hikari.initializationFailTimeout: 60000
 spring:
   liquibase:
     change-log: db/changelog/2025/07/25-01-changelog.yaml
+    url: jdbc:postgresql://localhost/product-db
+    user: user
+    password: pwd
 
+spring.cloud.function.definition: messageProcessor
+
+spring.cloud.stream:
+  defaultBinder: rabbit
+  default.contentType: application/json
+  bindings.messageProcessor-in-0:
+    destination: products
+    group: productsGroup
+
+spring.cloud.stream.bindings.messageProcessor-in-0.consumer:
+  maxAttempts: 3
+  backOffInitialInterval: 500
+  backOffMaxInterval: 1000
+  backOffMultiplier: 2.0
+
+spring.cloud.stream.rabbit.bindings.messageProcessor-in-0.consumer:
+  autoBindDlq: true
+  republishToDlq: true
+
+spring.rabbitmq:
+  host: 127.0.0.1
+  port: 5672
+  username: guest
+  password: guest
+
+management.endpoint.health.show-details: "ALWAYS"
+management.endpoints.web.exposure.include: "*"
 ---
 spring.config.activate.on-profile: docker
 
 server.port: 8080
 
 spring.r2dbc:
-  url: r2dbc:postgresql://postgres/product-db
+  url: r2dbc:postgresql://postgresql/product-db
+
+spring:
+  liquibase:
+    change-log: db/changelog/2025/07/25-01-changelog.yaml
+    url: jdbc:postgresql://postgresql/product-db
+    user: user
+    password: pwd
+
+spring.rabbitmq.host: rabbitmq

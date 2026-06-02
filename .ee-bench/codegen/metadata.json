@@ -5,7 +5,13 @@
   "jvm_version": "24",
   "build_system": "gradle",
   "expected": {
-    "fail_to_pass": [],
+    "fail_to_pass": [
+      "microservices:product-composite-service:shop.microservices.composite.product.IsSameEventTests",
+      "microservices:product-composite-service:shop.microservices.composite.product.MessagingTests",
+      "microservices:product-service:shop.microservices.core.product.ProductServiceApiTests",
+      "microservices:recommendation-service:shop.microservices.core.recommendation.RecommendationServiceApiTests",
+      "microservices:review-service:shop.microservices.core.review.ReviewServiceApiTests"
+    ],
     "pass_to_pass": []
   },
   "environment": {

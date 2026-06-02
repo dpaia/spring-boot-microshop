@@ -1,34 +1,15 @@
 package shop.api.core.recommendation;
 
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public interface RecommendationService {
 
-    /**
-     * Sample usage, see below.
-     * <p>
-     * curl -X POST $HOST:$PORT/recommendation \
-     * -H "Content-Type: application/json" --data \
-     * '{"productId":123,"recommendationId":456,"author":"me","rate":5,"content":"yada, yada, yada"}'
-     *
-     * @param body A JSON representation of the new recommendation
-     * @return A JSON representation of the newly created recommendation
-     */
-    @PostMapping(
-            value = "/recommendation",
-            consumes = "application/json",
-            produces = "application/json")
-    Mono<Recommendation> createRecommendation(@RequestBody Recommendation body);
+    Mono<Recommendation> createRecommendation(Recommendation body);
 
-    /**
-     * Sample usage: "curl -X DELETE $HOST:$PORT/recommendation?productId=1".
-     *
-     * @param productId ID of the product
-     */
-    @DeleteMapping(value = "/recommendation")
-    Mono<Void> deleteRecommendations(@RequestParam int productId);
+    Mono<Void> deleteRecommendations(int productId);
 
     /**
      * Sample usage: "curl $HOST:$PORT/recommendation?productId=1".
