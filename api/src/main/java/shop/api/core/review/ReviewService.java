@@ -1,8 +1,8 @@
 package shop.api.core.review;
 
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 public interface ReviewService {
 
@@ -20,7 +20,7 @@ public interface ReviewService {
             value = "/review",
             consumes = "application/json",
             produces = "application/json")
-    Review createReview(@RequestBody Review body);
+    Mono<Review> createReview(@RequestBody Review body);
 
     /**
      * Sample usage: "curl -X DELETE $HOST:$PORT/review?productId=1".
@@ -28,7 +28,7 @@ public interface ReviewService {
      * @param productId ID of the product
      */
     @DeleteMapping(value = "/review")
-    void deleteReviews(@RequestParam int productId);
+    Mono<Void> deleteReviews(@RequestParam int productId);
 
     /**
      * Sample usage: "curl $HOST:$PORT/review?productId=1".
@@ -39,5 +39,5 @@ public interface ReviewService {
     @GetMapping(
             value = "/review",
             produces = "application/json")
-    List<Review> getReviews(@RequestParam int productId);
+    Flux<Review> getReviews(@RequestParam int productId);
 }

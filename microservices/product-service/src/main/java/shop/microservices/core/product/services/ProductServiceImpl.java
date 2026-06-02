@@ -2,8 +2,8 @@ package shop.microservices.core.product.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
-import org.springframework.data.relational.core.conversion.DbActionExecutionException;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Mono;
 import shop.api.core.product.Product;
 import shop.api.core.product.ProductService;
 import shop.api.exceptions.InvalidInputException;
@@ -18,49 +18,51 @@ public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository repository;
 
-    private final ProductMapper productMapper;
+    private final ProductMapper mapper;
 
     @Autowired
-    public ProductServiceImpl(ProductRepository repository, ServiceUtil serviceUtil, ProductMapper productMapper) {
+    public ProductServiceImpl(ProductRepository repository, ProductMapper mapper, ServiceUtil serviceUtil) {
         this.repository = repository;
+        this.mapper = mapper;
         this.serviceUtil = serviceUtil;
-        this.productMapper = productMapper;
     }
 
     @Override
-    public Product createProduct(Product body) {
-        try {
-            ProductEntity entity = productMapper.apiToEntity(body);
-            ProductEntity newEntity = repository.save(entity);
-            return productMapper.entityToApi(newEntity);
-
-        } catch (DbActionExecutionException e) {
-            if (e.getCause() instanceof DuplicateKeyException) {
-                throw new InvalidInputException("Duplicate key, Product Id: " + body.productId());
-            }
-            else {
-                throw e;
-            }
+    public Mono<Product> createProduct(Product body) {
+        if (body.productId() < 1) {
+            throw new InvalidInputException("Invalid productId: " + body.productId());
         }
+
+        ProductEntity entity = mapper.apiToEntity(body);
+
+        return repository.save(entity)
+                .onErrorMap(
+                        DuplicateKeyException.class,
+                        _ ->
+                                new InvalidInputException(
+                                        "Duplicate key, Product Id: " + body.productId()))
+                .map(mapper::entityToApi);
     }
 
     @Override
-    public Product getProduct(int productId) {
-        if (productId < 0) {
+    public Mono<Product> getProduct(int productId) {
+        if (productId < 1) {
             throw new InvalidInputException("Invalid productId: " + productId);
         }
 
-        var entity = repository.findByProductId(productId);
-        if (entity.isEmpty()) {
-            throw new InvalidInputException("No product found for productId: " + productId);
-        }
-
-        return productMapper.entityToApi(entity.get())
-                .withServiceAddress(serviceUtil.getServiceAddress());
+        return repository.findByProductId(productId)
+                .map(mapper::entityToApi)
+                .map(e -> e.withServiceAddress(serviceUtil.getServiceAddress()));
     }
 
     @Override
-    public void deleteProduct(int productId) {
-        repository.findByProductId(productId).ifPresent(repository::delete);
+    public Mono<Void> deleteProduct(int productId) {
+        if (productId < 1) {
+            throw new InvalidInputException("Invalid productId: " + productId);
+        }
+
+        return repository.findByProductId(productId)
+                .map(repository::delete)
+                .flatMap(e -> e);
     }
 }

@@ -1,19 +1,13 @@
 package shop.microservices.core.review;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
-import org.springframework.test.json.AbstractJsonContentAssert;
-import org.springframework.test.web.servlet.assertj.MockMvcTester;
+import org.springframework.test.web.reactive.server.WebTestClient;
 import shop.api.core.review.Review;
 import shop.microservices.core.review.persistence.ReviewRepository;
-import shop.util.http.LocalDateConverter;
 
 import java.time.LocalDate;
 
@@ -21,15 +15,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
 import static org.springframework.http.HttpStatus.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static reactor.core.publisher.Mono.just;
 
-@AutoConfigureMockMvc
 @SpringBootTest(webEnvironment = RANDOM_PORT)
 class ReviewServiceApiTests extends MySqlTestBase {
 
     private static final String REVIEW_CONTENT = "Lorem ipsum dolor sit amet, consetetur sadipscingw";
 
     @Autowired
-    private MockMvcTester mockMvcTester;
+    private WebTestClient client;
 
     @Autowired
     private ReviewRepository repository;
@@ -52,9 +46,9 @@ class ReviewServiceApiTests extends MySqlTestBase {
         assertEquals(3, repository.findByProductId(productId).size());
 
         getAndVerifyReviewsByProductId(productId, OK)
-                .hasPathSatisfying("$.length()", it -> it.assertThat().isEqualTo(3))
-                .hasPathSatisfying("$[2].productId", it -> it.assertThat().isEqualTo(productId))
-                .hasPathSatisfying("$[2].reviewId", it -> it.assertThat().isEqualTo(3));
+                .jsonPath("$.length()").isEqualTo(3)
+                .jsonPath("$[2].productId").isEqualTo(productId)
+                .jsonPath("$[2].reviewId").isEqualTo(3);
     }
 
     @Test
@@ -65,14 +59,14 @@ class ReviewServiceApiTests extends MySqlTestBase {
         assertEquals(0, repository.count());
 
         postAndVerifyReview(productId, reviewId, OK)
-                .hasPathSatisfying("$.productId", it -> it.assertThat().isEqualTo(productId))
-                .hasPathSatisfying("$.reviewId", it -> it.assertThat().isEqualTo(reviewId));
+                .jsonPath("$.productId").isEqualTo(productId)
+                .jsonPath("$.reviewId").isEqualTo(reviewId);
 
         assertEquals(1, repository.count());
 
         postAndVerifyReview(productId, reviewId, UNPROCESSABLE_ENTITY)
-                .hasPathSatisfying("$.path", it -> it.assertThat().isEqualTo("/review"))
-                .hasPathSatisfying("$.message", it -> it.assertThat().isEqualTo("Duplicate key, Product Id: 1, Review Id:1"));
+                .jsonPath("$.path").isEqualTo("/review")
+                .jsonPath("$.message").isEqualTo("Duplicate key, Product Id: 1, Review Id:1");
 
         assertEquals(1, repository.count());
     }
@@ -104,7 +98,7 @@ class ReviewServiceApiTests extends MySqlTestBase {
     @Test
     void getReviewsNotFound() {
         getAndVerifyReviewsByProductId("?productId=213", OK)
-                .hasPathSatisfying("$.length()", it -> it.assertThat().isEqualTo(0));
+                .jsonPath("$.length()").isEqualTo(0);
     }
 
     @Test
@@ -112,52 +106,44 @@ class ReviewServiceApiTests extends MySqlTestBase {
         int productIdInvalid = -1;
 
         getAndVerifyReviewsByProductId("?productId=" + productIdInvalid, UNPROCESSABLE_ENTITY)
-                .hasPathSatisfying("$.path", it -> it.assertThat().isEqualTo("/review"))
-                .hasPathSatisfying("$.message", it -> it.assertThat().isEqualTo("Invalid productId: " + productIdInvalid));
+                .jsonPath("$.path").isEqualTo("/review")
+                .jsonPath("$.message").isEqualTo("Invalid productId: " + productIdInvalid);
     }
 
     @SuppressWarnings("SameParameterValue")
-    private AbstractJsonContentAssert<?> getAndVerifyReviewsByProductId(int productId, HttpStatus expectedStatus) {
+    private WebTestClient.BodyContentSpec getAndVerifyReviewsByProductId(int productId, HttpStatus expectedStatus) {
         return getAndVerifyReviewsByProductId("?productId=" + productId, expectedStatus);
     }
 
-    private AbstractJsonContentAssert<?> getAndVerifyReviewsByProductId(String productIdQuery, HttpStatus expectedStatus) {
-        return mockMvcTester.get()
+    private WebTestClient.BodyContentSpec getAndVerifyReviewsByProductId(String productIdQuery, HttpStatus expectedStatus) {
+        return client.get()
                 .uri("/review" + productIdQuery)
                 .accept(APPLICATION_JSON)
                 .exchange()
-                .assertThat()
-                .hasStatus(expectedStatus)
-                .bodyJson();
+                .expectStatus().isEqualTo(expectedStatus)
+                .expectHeader().contentType(APPLICATION_JSON)
+                .expectBody();
     }
 
-    private AbstractJsonContentAssert<?> postAndVerifyReview(int productId, int reviewId, HttpStatus expectedStatus) {
+    private WebTestClient.BodyContentSpec postAndVerifyReview(int productId, int reviewId, HttpStatus expectedStatus) {
         Review review = new Review(productId, reviewId, "Author " + reviewId, "Subject " + reviewId, REVIEW_CONTENT + reviewId, LocalDate.now(), "SA");
-        return mockMvcTester.post()
+        return client.post()
                 .uri("/review")
-                .contentType(APPLICATION_JSON)
-                .content(gson().toJson(review))
+                .body(just(review), Review.class)
+                .accept(APPLICATION_JSON)
                 .exchange()
-                .assertThat()
-                .hasStatus(expectedStatus)
-                .hasContentType(APPLICATION_JSON)
-                .bodyJson();
+                .expectStatus().isEqualTo(expectedStatus)
+                .expectHeader().contentType(APPLICATION_JSON)
+                .expectBody();
     }
 
     @SuppressWarnings("SameParameterValue")
     private void deleteAndVerifyReviewsByProductId(int productId, HttpStatus expectedStatus) {
-        mockMvcTester.delete()
+        client.delete()
                 .uri("/review?productId=" + productId)
                 .accept(APPLICATION_JSON)
                 .exchange()
-                .assertThat()
-                .hasStatus(expectedStatus)
-                .bodyJson();
-    }
-
-    private static Gson gson() {
-        GsonBuilder builder = new GsonBuilder();
-        builder.registerTypeAdapter(new TypeToken<LocalDate>(){}.getType(), new LocalDateConverter());
-        return builder.create();
+                .expectStatus().isEqualTo(expectedStatus)
+                .expectBody();
     }
 }

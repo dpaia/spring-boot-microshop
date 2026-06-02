@@ -32,5 +32,16 @@ public abstract class PostgresTestBase {
         registry.add("spring.datasource.url", database::getJdbcUrl);
         registry.add("spring.datasource.username", database::getUsername);
         registry.add("spring.datasource.password", database::getPassword);
+
+        // Liquibase properties (uses JDBC)
+        registry.add("spring.liquibase.url", database::getJdbcUrl);
+        registry.add("spring.liquibase.user", database::getUsername);
+        registry.add("spring.liquibase.password", database::getPassword);
+
+        // R2DBC properties for the reactive repository
+        registry.add("spring.r2dbc.url", () -> String.format("r2dbc:postgresql://%s:%d/%s",
+                database.getHost(), database.getFirstMappedPort(), database.getDatabaseName()));
+        registry.add("spring.r2dbc.username", database::getUsername);
+        registry.add("spring.r2dbc.password", database::getPassword);
     }
 }

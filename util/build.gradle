@@ -22,7 +22,7 @@ dependencies {
     implementation platform("org.springframework.boot:spring-boot-dependencies:${springBootVersion}")
 
     implementation project(':api')
-    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
     implementation 'com.google.code.gson:gson:2.13.1'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
