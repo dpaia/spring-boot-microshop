@@ -3,6 +3,7 @@ package shop.microservices.core.product.services;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import shop.api.core.product.Product;
 import shop.api.core.product.ProductService;
@@ -53,6 +54,13 @@ public class ProductServiceImpl implements ProductService {
 
         return repository.findByProductId(productId)
                 .switchIfEmpty(Mono.error(new NotFoundException("No product found for productId: " + productId)))
+                .map(mapper::entityToApi)
+                .map(e -> e.withServiceAddress(serviceUtil.getServiceAddress()));
+    }
+
+    @Override
+    public Flux<Product> getAllProducts() {
+        return repository.findAll()
                 .map(mapper::entityToApi)
                 .map(e -> e.withServiceAddress(serviceUtil.getServiceAddress()));
     }

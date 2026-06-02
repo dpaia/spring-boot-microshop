@@ -50,6 +50,23 @@ class ProductCompositeApiTests {
                 .thenThrow(new InvalidInputException("INVALID: " + PRODUCT_ID_INVALID));
         when(compositeIntegration.getProduct(PRODUCT_ID_NOT_FOUND))
                 .thenThrow(new NotFoundException("NOT FOUND: " + PRODUCT_ID_NOT_FOUND));
+
+        when(compositeIntegration.getAllProducts())
+                .thenReturn(Flux.just(
+                        new Product(5, "water", 1, "mock-address"),
+                        new Product(6, "bread", 2, "mock-address"),
+                        new Product(7, "sugar", 3, "mock-address")));
+        when(compositeIntegration.getRecommendations(5))
+                .thenReturn(Flux.just(
+                        new Recommendation(5, 5, "author", 5, "content", "mock address")
+                ));
+        when(compositeIntegration.getRecommendations(6)).thenReturn(Flux.just());
+        when(compositeIntegration.getRecommendations(7)).thenReturn(Flux.just());
+        when(compositeIntegration.getReviews(5)).thenReturn(Flux.just(
+                new Review(5, 5, "author", "subject", "content", 5, LocalDate.now(), "mock address")
+        ));
+        when(compositeIntegration.getReviews(6)).thenReturn(Flux.just());
+        when(compositeIntegration.getReviews(7)).thenReturn(Flux.just());
     }
 
     @Test
@@ -83,6 +100,23 @@ class ProductCompositeApiTests {
                 .expectBody()
                 .jsonPath("$.length()").isEqualTo(1)
                 .jsonPath("$[0].rating").isEqualTo(4);
+    }
+
+    @Test
+    void getAllProducts() {
+        client.get()
+                .uri("/product-composite")
+                .accept(APPLICATION_JSON)
+                .exchange()
+                .expectStatus().isEqualTo(OK)
+                .expectHeader().contentType(APPLICATION_JSON)
+                .expectBody()
+                .jsonPath("$.length()").isEqualTo(3)
+                .jsonPath("$[0].name").isEqualTo("water")
+                .jsonPath("$[0].recommendations[0].author").isEqualTo("author")
+                .jsonPath("$[0].reviews[0].author").isEqualTo("author")
+                .jsonPath("$[1].name").isEqualTo("bread")
+                .jsonPath("$[2].name").isEqualTo("sugar");
     }
 
     private WebTestClient.BodyContentSpec getAndVerifyProduct(int productId, HttpStatus expectedStatus) {
