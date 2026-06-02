@@ -38,7 +38,8 @@ import static shop.microservices.composite.product.IsSameEvent.sameEventExceptCr
 @SuppressWarnings({"unchecked", "rawtypes"})
 @SpringBootTest(
         webEnvironment = RANDOM_PORT, properties = {
-        "spring.main.allow-bean-definition-overriding=true"
+        "spring.main.allow-bean-definition-overriding=true",
+        "eureka.client.enabled=false"
 })
 @Import({TestChannelBinderConfiguration.class})
 class MessagingTests {

@@ -22,7 +22,7 @@ import static shop.api.event.Event.Type.CREATE;
 import static shop.api.event.Event.Type.DELETE;
 
 @SuppressWarnings("DataFlowIssue")
-@SpringBootTest(webEnvironment = RANDOM_PORT)
+@SpringBootTest(webEnvironment = RANDOM_PORT, properties = {"eureka.client.enabled=false"})
 class ProductServiceApiTests extends PostgresTestBase {
 
     @Autowired
