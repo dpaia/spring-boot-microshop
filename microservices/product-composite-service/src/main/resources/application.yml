@@ -1,0 +1,2 @@
+# macOS uses the '7000' port for the control center
+server.port: 7001
