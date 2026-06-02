@@ -11,9 +11,6 @@ import shop.microservices.core.product.persistence.ProductEntity;
 import shop.microservices.core.product.persistence.ProductRepository;
 import shop.util.http.ServiceUtil;
 
-import static shop.microservices.core.product.services.MapperUtils.apiToEntity;
-import static shop.microservices.core.product.services.MapperUtils.entityToApi;
-
 @RestController
 public class ProductServiceImpl implements ProductService {
 
@@ -21,18 +18,21 @@ public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository repository;
 
+    private final ProductMapper productMapper;
+
     @Autowired
-    public ProductServiceImpl(ProductRepository repository, ServiceUtil serviceUtil) {
+    public ProductServiceImpl(ProductRepository repository, ServiceUtil serviceUtil, ProductMapper productMapper) {
         this.repository = repository;
         this.serviceUtil = serviceUtil;
+        this.productMapper = productMapper;
     }
 
     @Override
     public Product createProduct(Product body) {
         try {
-            ProductEntity entity = apiToEntity(body);
+            ProductEntity entity = productMapper.apiToEntity(body);
             ProductEntity newEntity = repository.save(entity);
-            return entityToApi(newEntity);
+            return productMapper.entityToApi(newEntity);
 
         } catch (DbActionExecutionException e) {
             if (e.getCause() instanceof DuplicateKeyException) {
@@ -55,7 +55,7 @@ public class ProductServiceImpl implements ProductService {
             throw new InvalidInputException("No product found for productId: " + productId);
         }
 
-        return entityToApi(entity.get())
+        return productMapper.entityToApi(entity.get())
                 .withServiceAddress(serviceUtil.getServiceAddress());
     }
 
