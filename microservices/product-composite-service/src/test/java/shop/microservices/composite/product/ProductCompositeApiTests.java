@@ -13,6 +13,8 @@ import shop.api.core.review.Review;
 import shop.api.exceptions.InvalidInputException;
 import shop.microservices.composite.product.services.ProductCompositeIntegration;
 
+import java.time.LocalDate;
+
 import static java.util.Collections.singletonList;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.HttpStatus.OK;
@@ -41,7 +43,7 @@ public class ProductCompositeApiTests {
                 .thenReturn(singletonList(new Recommendation(PRODUCT_ID_OK, 1, "author", 1, "content", "mock address")));
 
         when(compositeIntegration.getReviews(PRODUCT_ID_OK))
-                .thenReturn(singletonList(new Review(PRODUCT_ID_OK, 1, "author", "subject", "content", "mock address")));
+                .thenReturn(singletonList(new Review(PRODUCT_ID_OK, 1, "author", "subject", "content", LocalDate.now(), "mock address")));
     }
 
     @Test

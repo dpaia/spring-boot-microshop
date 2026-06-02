@@ -16,7 +16,8 @@ public final class MappingUtils {
                 review.reviewId(),
                 review.author(),
                 review.subject(),
-                review.content()
+                review.content(),
+                review.date()
         );
     }
 
@@ -27,6 +28,7 @@ public final class MappingUtils {
                 reviewEntity.getAuthor(),
                 reviewEntity.getSubject(),
                 reviewEntity.getContent(),
+                reviewEntity.getDate(),
                 null
         );
     }

@@ -3,7 +3,10 @@ package shop.microservices.core.review.persistence;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "reviews", indexes = {
@@ -12,7 +15,7 @@ import jakarta.validation.constraints.Size;
 public class ReviewEntity {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
     @Version
@@ -28,16 +31,19 @@ public class ReviewEntity {
     private String subject;
     @Size(min = 50, max = 200)
     private String content;
+    @NotNull
+    private LocalDate date;
 
     public ReviewEntity() {
     }
 
-    public ReviewEntity(int productId, int reviewId, String author, String subject, String content) {
+    public ReviewEntity(int productId, int reviewId, String author, String subject, String content, LocalDate date) {
         this.productId = productId;
         this.reviewId = reviewId;
         this.author = author;
         this.subject = subject;
         this.content = content;
+        this.date = date;
     }
 
     public int getId() {
@@ -94,5 +100,13 @@ public class ReviewEntity {
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    public LocalDate getDate() {
+        return date;
+    }
+
+    public void setDate(LocalDate date) {
+        this.date = date;
     }
 }
