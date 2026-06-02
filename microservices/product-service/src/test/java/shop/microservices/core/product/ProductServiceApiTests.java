@@ -19,7 +19,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 @AutoConfigureMockMvc
 @SpringBootTest
-public class ProductServiceApiTests {
+public class ProductServiceApiTests extends PostgresTestBase {
 
     @Autowired
     private MockMvcTester mockMvcTester;

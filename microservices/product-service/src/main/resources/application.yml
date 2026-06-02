@@ -7,10 +7,9 @@ spring.datasource:
 
 spring.datasource.hikari.initializationFailTimeout: 60000
 
-spring.sql.init:
-  mode: always
-  schema-locations: classpath:db/init/init.sql
-  platform: postgres
+spring:
+  liquibase:
+    change-log: db/changelog/2025/07/25-01-changelog.yaml
 
 ---
 spring.config.activate.on-profile: docker

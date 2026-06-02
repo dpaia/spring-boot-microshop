@@ -1,0 +1,32 @@
+databaseChangeLog:
+  - changeSet:
+      id: 1753431692767-1
+      author: Daniil.Tsaryov
+      objectQuotingStrategy: QUOTE_ONLY_RESERVED_WORDS
+      changes:
+        - createTable:
+            columns:
+              - column:
+                  autoIncrement: true
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: pk_products
+                  name: id
+                  type: INT
+              - column:
+                  name: version
+                  type: INT
+              - column:
+                  name: product_id
+                  type: INT
+                  constraints:
+                    unique: true
+              - column:
+                  name: name
+                  type: VARCHAR
+              - column:
+                  name: weight
+                  type: INT
+            tableName: products
+
