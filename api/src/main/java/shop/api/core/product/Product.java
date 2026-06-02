@@ -6,4 +6,7 @@ public record Product(
         int weight,
         String serviceAddress
 ) {
+    public Product withServiceAddress(String serviceAddress) {
+        return new Product(productId, name, weight, serviceAddress);
+    }
 }
