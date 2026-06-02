@@ -8,7 +8,7 @@ import org.springframework.core.env.Environment;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest(properties = {"spring.flyway.enabled: false"})
-public class ReviewServiceApplicationTests {
+public class ReviewServiceApplicationTests extends MySqlTestBase {
 
     @Autowired
     private Environment environment;

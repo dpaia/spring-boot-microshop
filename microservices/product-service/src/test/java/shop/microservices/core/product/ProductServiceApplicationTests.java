@@ -8,7 +8,7 @@ import org.springframework.core.env.Environment;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest
-public class ProductServiceApplicationTests {
+public class ProductServiceApplicationTests extends PostgresTestBase {
 
     @Autowired
     private Environment environment;
