@@ -25,6 +25,8 @@ import static org.springframework.transaction.annotation.Propagation.NOT_SUPPORT
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class PersistenceTests extends MySqlTestBase {
 
+    private static final String REVIEW_CONTENT = "Lorem ipsum dolor sit amet, consetetur sadipscingw";
+
     @Autowired
     private ReviewRepository repository;
 
@@ -34,7 +36,7 @@ class PersistenceTests extends MySqlTestBase {
     void setupDb() {
         repository.deleteAll();
 
-        ReviewEntity entity = new ReviewEntity(1, 2, "a", "s", "c");
+        ReviewEntity entity = new ReviewEntity(1, 2, "a", "s", REVIEW_CONTENT);
         savedEntity = repository.save(entity);
 
         assertEqualsReview(entity, savedEntity);
@@ -42,7 +44,7 @@ class PersistenceTests extends MySqlTestBase {
 
     @Test
     void create() {
-        ReviewEntity newEntity = new ReviewEntity(1, 3, "a", "s", "c");
+        ReviewEntity newEntity = new ReviewEntity(1, 3, "a", "s", REVIEW_CONTENT);
         repository.save(newEntity);
 
         ReviewEntity foundEntity = repository.findById(newEntity.getId()).get();
@@ -78,7 +80,7 @@ class PersistenceTests extends MySqlTestBase {
     @Test
     void duplicateError() {
         assertThrows(DataIntegrityViolationException.class, () -> {
-            ReviewEntity entity = new ReviewEntity(1, 2, "a", "s", "c");
+            ReviewEntity entity = new ReviewEntity(1, 2, "a", "s", REVIEW_CONTENT);
             repository.save(entity);
         });
     }

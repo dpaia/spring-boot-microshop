@@ -5,7 +5,11 @@
   "jvm_version": "24",
   "build_system": "gradle",
   "expected": {
-    "fail_to_pass": [],
+    "fail_to_pass": [
+      "microservices:review-service:shop.microservices.core.review.PersistenceTests",
+      "microservices:review-service:shop.microservices.core.review.ReviewServiceApiTests",
+      "microservices:review-service:shop.microservices.core.review.ReviewValidationTests"
+    ],
     "pass_to_pass": []
   },
   "environment": {
