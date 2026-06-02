@@ -6,6 +6,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.data.mapping.context.MappingContext;
@@ -15,10 +16,12 @@ import org.springframework.data.mongodb.core.index.IndexResolver;
 import org.springframework.data.mongodb.core.index.MongoPersistentEntityIndexResolver;
 import org.springframework.data.mongodb.core.mapping.MongoPersistentEntity;
 import org.springframework.data.mongodb.core.mapping.MongoPersistentProperty;
+import shop.microservices.core.recommendation.persistence.MongoDbValidationConfig;
 import shop.microservices.core.recommendation.persistence.RecommendationEntity;
 
 @SpringBootApplication
 @ComponentScan("shop")
+@Import(MongoDbValidationConfig.class)
 public class RecommendationServiceApplication {
 
     private static final Logger LOG = LoggerFactory.getLogger(RecommendationServiceApplication.class);

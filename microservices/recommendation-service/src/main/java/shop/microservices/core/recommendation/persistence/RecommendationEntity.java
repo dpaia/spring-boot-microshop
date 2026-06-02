@@ -1,5 +1,9 @@
 package shop.microservices.core.recommendation.persistence;
 
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import org.hibernate.validator.constraints.Range;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.Version;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
@@ -15,10 +19,15 @@ public class RecommendationEntity {
     @Version
     private Integer version;
 
+    @Min(0)
     private int productId;
+    @Min(0)
     private int recommendationId;
+    @NotBlank
     private String author;
+    @Range(min = 1, max = 5)
     private int rating;
+    @Size(min = 50, max = 200)
     private String content;
 
     public RecommendationEntity() {

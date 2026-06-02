@@ -3,7 +3,8 @@ package shop.microservices.core.recommendation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
+import org.springframework.boot.test.autoconfigure.data.mongo.AutoConfigureDataMongo;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import shop.microservices.core.recommendation.persistence.RecommendationEntity;
@@ -16,8 +17,11 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SuppressWarnings("ALL")
-@DataMongoTest
+@AutoConfigureDataMongo
+@SpringBootTest
 class PersistenceTests extends MongoDbTestBase {
+
+    private static final String RECOMMENDATION_CONTENT = "Lorem ipsum dolor sit amet, consetetur sadipscingw";
 
     @Autowired
     private RecommendationRepository repository;
@@ -28,7 +32,7 @@ class PersistenceTests extends MongoDbTestBase {
     void setupDb() {
         repository.deleteAll();
 
-        RecommendationEntity entity = new RecommendationEntity(1, 2, "a", 3, "c");
+        RecommendationEntity entity = new RecommendationEntity(1, 2, "a", 3, RECOMMENDATION_CONTENT);
         savedEntity = repository.save(entity);
 
         assertEqualsRecommendation(entity, savedEntity);
@@ -36,7 +40,7 @@ class PersistenceTests extends MongoDbTestBase {
 
     @Test
     void create() {
-        RecommendationEntity newEntity = new RecommendationEntity(1, 3, "a", 3, "c");
+        RecommendationEntity newEntity = new RecommendationEntity(1, 3, "a", 3, RECOMMENDATION_CONTENT);
         repository.save(newEntity);
 
         RecommendationEntity foundEntity = repository.findById(newEntity.getId()).get();
@@ -72,7 +76,7 @@ class PersistenceTests extends MongoDbTestBase {
     @Test
     void duplicateError() {
         assertThrows(DuplicateKeyException.class, () -> {
-            RecommendationEntity entity = new RecommendationEntity(1, 2, "a", 3, "c");
+            RecommendationEntity entity = new RecommendationEntity(1, 2, "a", 3, RECOMMENDATION_CONTENT);
             repository.save(entity);
         });
     }
