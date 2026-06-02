@@ -96,6 +96,17 @@ public class ProductCompositeIntegration implements ProductService, Recommendati
         }
     }
 
+    @Override
+    public Recommendation createRecommendation(Recommendation body) {
+        return restTemplate.postForObject(recommendationServiceUrl, body, Recommendation.class);
+    }
+
+    @Override
+    public void deleteRecommendations(int productId) {
+        String url = recommendationServiceUrl + "?productId=" + productId;
+        restTemplate.delete(url);
+    }
+
     public List<Review> getReviews(int productId) {
         try {
             String url = reviewServiceUrl + productId;
