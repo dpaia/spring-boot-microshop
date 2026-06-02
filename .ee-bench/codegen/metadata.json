@@ -5,7 +5,9 @@
   "jvm_version": "24",
   "build_system": "gradle",
   "expected": {
-    "fail_to_pass": [],
+    "fail_to_pass": [
+      "microservices:review-service:shop.microservices.core.review.ReviewDbMigrationTest"
+    ],
     "pass_to_pass": []
   },
   "environment": {
