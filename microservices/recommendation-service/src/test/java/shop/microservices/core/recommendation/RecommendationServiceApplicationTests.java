@@ -8,7 +8,7 @@ import org.springframework.core.env.Environment;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest
-public class RecommendationServiceApplicationTests {
+public class RecommendationServiceApplicationTests extends MongoDbTestBase {
 
     @Autowired
     private Environment environment;
