@@ -8,7 +8,7 @@ import org.springframework.core.env.Environment;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest
-public class ReviewServiceApplicationTests {
+public class ReviewServiceApplicationTests extends MySqlTestBase {
 
     @Autowired
     private Environment environment;

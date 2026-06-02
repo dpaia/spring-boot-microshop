@@ -8,4 +8,7 @@ public record Review(
         String content,
         String serviceAddress
 ) {
+    public Review withServiceAddress(String serviceAddress) {
+        return new Review(productId, reviewId, author, subject, content, serviceAddress);
+    }
 }
