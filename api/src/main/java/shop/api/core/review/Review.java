@@ -8,10 +8,11 @@ public record Review(
         String author,
         String subject,
         String content,
+        int rating,
         LocalDate date,
         String serviceAddress
 ) {
     public Review withServiceAddress(String serviceAddress) {
-        return new Review(productId, reviewId, author, subject, content, date, serviceAddress);
+        return new Review(productId, reviewId, author, subject, content, rating, date, serviceAddress);
     }
 }

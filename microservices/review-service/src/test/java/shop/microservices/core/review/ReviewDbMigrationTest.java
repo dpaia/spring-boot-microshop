@@ -29,7 +29,7 @@ public class ReviewDbMigrationTest extends MySqlTestBase {
         BigInteger dbMajorVersion = flyway.info().current().getVersion().getMajor();
 
         assertThat(dbMajorVersion)
-                .isEqualTo(2);
+                .isEqualTo(3);
 
         try {
             //noinspection SqlDialectInspection

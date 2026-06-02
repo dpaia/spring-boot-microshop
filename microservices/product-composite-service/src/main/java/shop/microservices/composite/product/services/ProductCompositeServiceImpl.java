@@ -58,7 +58,7 @@ public class ProductCompositeServiceImpl implements ProductCompositeService {
 
             if (body.reviews() != null) {
                 body.reviews().forEach(r -> {
-                    Review review = new Review(body.productId(), r.reviewId(), r.author(), r.subject(), r.content(), LocalDate.now(), null);
+                    Review review = new Review(body.productId(), r.reviewId(), r.author(), r.subject(), r.content(), r.rating(), LocalDate.now(), null);
                     monoList.add(integration.createReview(review));
                 });
             }
@@ -118,7 +118,7 @@ public class ProductCompositeServiceImpl implements ProductCompositeService {
                 (reviews == null)
                         ? null
                         : reviews.stream()
-                        .map(r -> new ReviewSummary(r.reviewId(), r.author(), r.subject(), r.content()))
+                        .map(r -> new ReviewSummary(r.reviewId(), r.author(), r.subject(), r.content(), r.rating()))
                         .collect(Collectors.toList());
 
         // 4. Create info regarding the involved microservices addresses

@@ -5,7 +5,17 @@
   "jvm_version": "24",
   "build_system": "gradle",
   "expected": {
-    "fail_to_pass": [],
+    "fail_to_pass": [
+      "microservices:product-composite-service:shop.microservices.composite.product.MessagingTests#createCompositeProduct2",
+      "microservices:product-composite-service:shop.microservices.composite.product.ProductCompositeApiTests#getProductById",
+      "microservices:review-service:shop.microservices.core.review.PersistenceTests#getByProductId",
+      "microservices:review-service:shop.microservices.core.review.ReviewDbMigrationTest#testMigration",
+      "microservices:review-service:shop.microservices.core.review.ReviewMapperTest#mapperTests",
+      "microservices:review-service:shop.microservices.core.review.ReviewMapperTest#mapperListTests",
+      "microservices:review-service:shop.microservices.core.review.ReviewServiceApiTests#getReviewsByProductId",
+      "microservices:review-service:shop.microservices.core.review.ReviewValidationTests#testReviewEntityValidationNegative",
+      "microservices:review-service:shop.microservices.core.review.ReviewValidationTests#testReviewEntityValidationPositive"
+    ],
     "pass_to_pass": []
   },
   "environment": {

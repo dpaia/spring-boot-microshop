@@ -45,7 +45,7 @@ class ProductCompositeApiTests {
         when(compositeIntegration.getRecommendations(PRODUCT_ID_OK))
                 .thenReturn(Flux.just(new Recommendation(PRODUCT_ID_OK, 1, "author", 1, "content", "mock address")));
         when(compositeIntegration.getReviews(PRODUCT_ID_OK))
-                .thenReturn(Flux.just(new Review(PRODUCT_ID_OK, 1, "author", "subject", "content", LocalDate.now(), "mock address")));
+                .thenReturn(Flux.just(new Review(PRODUCT_ID_OK, 1, "author", "subject", "content", 4, LocalDate.now(), "mock address")));
         when(compositeIntegration.getProduct(PRODUCT_ID_INVALID))
                 .thenThrow(new InvalidInputException("INVALID: " + PRODUCT_ID_INVALID));
         when(compositeIntegration.getProduct(PRODUCT_ID_NOT_FOUND))

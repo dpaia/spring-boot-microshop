@@ -18,10 +18,10 @@ public class ReviewValidationTests {
             Validator validator = validatorFactory.getValidator();
 
             var violations = validator.validate(
-                    new ReviewEntity(-1, -1, "", "", "test", null));
+                    new ReviewEntity(-1, -1, "", "", "test", -1, null));
 
             assertFalse(violations.isEmpty());
-            assertEquals(6, violations.size());
+            assertEquals(7, violations.size());
             assertThat(violations)
                     .extracting(it -> it.getPropertyPath() + " " + it.getMessage())
                     .containsExactlyInAnyOrder(
@@ -30,7 +30,8 @@ public class ReviewValidationTests {
                             "author must not be blank",
                             "content size must be between 50 and 200",
                             "subject must not be blank",
-                            "date must not be null");
+                            "date must not be null",
+                            "rating must be between 1 and 5");
         }
     }
 
@@ -46,6 +47,7 @@ public class ReviewValidationTests {
                             "John Snow",
                             "Test",
                             "Lorem ipsum dolor sit amet, consetetur sadipscingw",
+                            4,
                             LocalDate.now()));
 
             assertTrue(violations.isEmpty());

@@ -142,7 +142,7 @@ class ReviewServiceApiTests extends MySqlTestBase {
     }
 
     private void sendCreateReviewEvent(int productId, int reviewId) {
-        Review review = new Review(productId, reviewId, "Author " + reviewId, "Subject " + reviewId, REVIEW_CONTENT + reviewId, LocalDate.now(), "SA");
+        Review review = new Review(productId, reviewId, "Author " + reviewId, "Subject " + reviewId, REVIEW_CONTENT + reviewId, 4, LocalDate.now(), "SA");
         Event<Integer, Review> event = new Event<>(CREATE, productId, review);
         messageProcessor.accept(event);
     }

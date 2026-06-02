@@ -4,6 +4,7 @@ public record ReviewSummary(
         int reviewId,
         String author,
         String subject,
-        String content
+        String content,
+        int rating
 ) {
 }
